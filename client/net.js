@@ -16,8 +16,17 @@
   // 관리자: 주소 뒤에 ?admin=열쇠 를 한 번 붙여 들어오면 이 기기에 기억. ?admin=off 로 지움
   if (qs.has('admin')) LS.set('admin', qs.get('admin') === 'off' ? null : qs.get('admin'));
   const adminKey = LS.get('admin') || '';
-  // 마을 번호: ?v=2 처럼 고르거나, 지난번 마을로 다시 감
-  let village = Math.max(1, parseInt(qs.get('v') || LS.get('village') || '1', 10) || 1);
+  // 마을 번호: 주소 끝 /02 처럼 고르거나(예전 ?v=2 도 됨), 없으면 지난번 마을로 다시 감
+  const pathV = (location.pathname.match(/^\/(\d{1,3})\/?$/) || [])[1];
+  let village = Math.max(1, parseInt(pathV || qs.get('v') || LS.get('village') || '1', 10) || 1);
+  // 들어간 마을 번호를 주소창에 보여 줌(…/01). 친구에게 주소를 그대로 보내도 같은 마을로 와요
+  function showVillageInUrl() {
+    try {
+      const q = new URLSearchParams(location.search); q.delete('v'); q.delete('admin');
+      const s = q.toString();
+      history.replaceState(history.state, '', '/' + String(village).padStart(2, '0') + (s ? '?' + s : '') + location.hash);
+    } catch { /* 주소를 못 바꿔도 게임엔 지장 없음 */ }
+  }
 
   const enc = o => JSON.stringify(o);
   const clone = o => o == null ? o : JSON.parse(JSON.stringify(o));
@@ -147,7 +156,7 @@
       switch (m.t) {
         case 'hello':
           hello = m; connected = true; retry = 0; everConnected = true; LS.set('village', String(village));
-          window.SNOWTOWN_VILLAGE = village;
+          window.SNOWTOWN_VILLAGE = village; showVillageInUrl();
           for (const col of colL.keys()) ws.send(enc({ t: 'sub', col }));
           for (const path of docL.keys()) ws.send(enc({ t: 'subdoc', path }));
           if (Object.keys(myPres).length) sendPres(true);

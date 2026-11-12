@@ -1,5 +1,6 @@
 // 눈사람 마을 서버 (Cloudflare Workers + Durable Objects)
 // - 게임 파일(public/)은 정적 파일로 무료 제공
+// - 마을 주소는 /01, /02 … (화면은 같고, 접속할 때 /ws?v=마을번호 로 붙음)
 // - /ws?v=마을번호 로 들어오면 그 마을의 Durable Object 하나가 접속·저장을 모두 맡음
 //   · 실시간 위치(presence) 중계: 받은 걸 다른 사람에게 바로 뿌림(보내는 메시지는 무료)
 //   · 저장소: 마을마다 SQLite 표 하나(docs)에 문서를 JSON으로 보관
@@ -26,6 +27,12 @@ export default {
       return stub.fetch(req);
     }
     if (url.pathname === '/api/health') return Response.json({ ok: true });
+    // 마을 주소: /01, /02 … (게임 채널처럼). 같은 게임 화면을 주고, 몇 번 마을인지는 net.js 가 주소에서 읽어요
+    const vm = url.pathname.match(/^\/(\d{1,3})(\/?)$/);
+    if (vm) {
+      if (vm[2]) return Response.redirect(new URL('/' + vm[1] + url.search, url).toString(), 301); // /01/ → /01
+      return env.ASSETS.fetch(new Request(new URL('/' + url.search, url), req));
+    }
     return env.ASSETS.fetch(req);
   },
 };
