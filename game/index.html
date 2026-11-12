@@ -141,6 +141,9 @@ body.touch #touch { display: block; }
   display: grid; grid-template-columns: repeat(2, 64px); gap: 10px;
 }
 .tbtn { width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); background: rgba(15, 26, 51, 0.72); font-size: 13px; font-weight: 600; touch-action: none; }
+#t-photo { position: absolute; right: calc(16px + env(safe-area-inset-right)); bottom: calc(208px + env(safe-area-inset-bottom)); width: 48px; height: 48px; display: grid; place-items: center; padding: 0; }
+#t-photo svg { width: 22px; height: 22px; }
+body.touch #btn-photo { display: none; }
 .tbtn.main { grid-column: span 2; width: 100%; height: 56px; border-radius: 28px; background: var(--carrot); color: #1d1005; border-color: transparent; font-size: 15px; }
 body.touch #chat { bottom: calc(10px + env(safe-area-inset-bottom)); width: calc(100vw - 24px); }
 body.touch #chatlog { position: fixed; top: calc(98px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); width: calc(100vw - 160px); max-height: 96px; }
@@ -351,7 +354,13 @@ body.touch.card-open #touch, body.touch.card-open #chat, body.touch.card-open #c
   #deco, #card { left: auto; right: calc(8px + env(safe-area-inset-right)); transform: none; top: calc(8px + env(safe-area-inset-top)); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(400px, 50vw); max-height: none; }
   #deco.folded { bottom: auto; }
   body.touch.card-open #toolbar, body.touch.card-open #minimap { display: none; }
-  #photo .snap-bar { left: auto; right: calc(8px + env(safe-area-inset-right)); transform: none; top: calc(8px + env(safe-area-inset-top)); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(300px, 40vw); align-content: start; overflow-y: auto; }
+  #t-photo { right: calc(168px + env(safe-area-inset-right)); bottom: calc(144px + env(safe-area-inset-bottom)); }
+  #photo .snap-bar { left: auto; right: calc(8px + env(safe-area-inset-right)); transform: none; top: calc(8px + env(safe-area-inset-top)); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(290px, 38vw); align-content: start; overflow-y: auto; }
+  .shot-card { width: min(780px, 100%); grid-template-columns: minmax(0, 1fr) minmax(200px, 250px); grid-template-rows: auto auto 1fr; align-items: start; column-gap: 14px; padding: 12px; }
+  .shot-card .sheet-head { grid-column: 2; grid-row: 1; }
+  #shot-img { grid-column: 1; grid-row: 1 / span 3; max-height: calc(100vh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .shot-btns { grid-column: 2; grid-row: 2; grid-template-columns: 1fr; }
+  #shot-note { grid-column: 2; grid-row: 3; font-size: 11.5px; }
   #photo .snap-row { flex-wrap: wrap; overflow: visible; justify-content: flex-start; }
   #photo .snap-go { flex-wrap: nowrap; }
   #photo .snap-top { left: calc(8px + env(safe-area-inset-left)); transform: none; max-width: calc(60vw - 24px); }
@@ -517,6 +526,19 @@ body.touch #snack .sheet-head { padding-top: 8px; padding-bottom: 6px; }
 .snap-row .pill { height: 30px; padding: 0 11px; }
 .snap-go .btn { flex: 1; max-width: 220px; }
 @media (max-width: 520px) { .snap-row .snap-lbl { display: none; } .snap-bar { padding: 8px; gap: 6px; } }
+#snap-reset { display: inline-flex; align-items: center; gap: 5px; }
+#snap-reset svg { width: 15px; height: 15px; flex: none; }
+#snap-who { gap: 0; }
+#snap-who .pill:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+#snap-who .pill:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+/* 좁은 화면: 비율·틀은 고른 것 하나만 보이고 누르면 다음 것으로 바뀜 */
+@media (max-width: 520px) {
+  #snap-ratio .pill:not([aria-pressed="true"]), #snap-frame .pill:not([aria-pressed="true"]) { display: none; }
+  #snap-ratio .pill::after, #snap-frame .pill::after { content: ' ▾'; font-size: 10px; opacity: 0.7; }
+  #snap-reset span { display: none; }
+  #snap-reset { padding: 0 9px; }
+  #photo #snap-pose { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); padding-right: 18px; }
+}
 #snap-count { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); font-family: var(--font-display); font-size: min(30vw, 180px); color: #fff; text-shadow: 0 6px 30px rgba(8, 14, 30, 0.5); pointer-events: none; }
 #snap-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.45s ease-out; }
 #snap-flash.on { opacity: 0.9; transition: none; }
@@ -670,6 +692,7 @@ body.touch .keys.desk { display: none; }
         <button id="t-jump" class="tbtn" type="button">점프</button>
         <button id="t-view" class="tbtn" type="button" hidden>보기</button>
       </div>
+      <button id="t-photo" class="tbtn" type="button" aria-label="사진 찍기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg></button>
     </div>
   </div>
 
@@ -786,9 +809,9 @@ body.touch .keys.desk { display: none; }
         <span id="snap-ratio" class="snap-row" role="group" aria-label="사진 비율"><button class="pill" type="button" data-r="1:1">1:1</button><button class="pill" type="button" data-r="4:5">4:5</button><button class="pill" type="button" data-r="9:16">9:16 스토리</button></span>
         <span class="snap-lbl">틀</span>
         <span id="snap-frame" class="snap-row" role="group" aria-label="사진 틀"><button class="pill" type="button" data-f="polaroid">폴라로이드</button><button class="pill" type="button" data-f="none">사진만</button></span>
-        <button class="pill" type="button" id="snap-me">나도 나오기</button>
+        <span id="snap-who" class="snap-row" role="group" aria-label="누가 나오나"><button class="pill" type="button" id="snap-me">나도 나오기</button><button class="pill" type="button" id="snap-solo">풍경</button></span>
         <button class="pill" type="button" id="snap-side" hidden>자리 바꾸기</button>
-        <button class="pill" type="button" id="snap-reset">다시 맞추기</button>
+        <button class="pill" type="button" id="snap-reset" title="각도·거리 처음대로" aria-label="다시 맞추기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg><span>다시 맞추기</span></button>
       </div>
       <div class="snap-row snap-go">
         <button id="snap-timer" class="btn" type="button">3초 뒤 찍기</button>
@@ -4504,7 +4527,7 @@ function layoutGuide() {
   const d = snapDims(), a = d.pw / d.ph;
   const tb = $('.snap-top').getBoundingClientRect(), bb = $('.snap-bar').getBoundingClientRect();
   let x0 = 12, x1 = innerWidth - 12, y0 = tb.bottom + 10, y1 = innerHeight - 10;
-  if (bb.left > innerWidth * 0.4 && bb.top < innerHeight * 0.4) x1 = bb.left - 12; // 가로 화면: 오른쪽 창
+  if (bb.left > innerWidth * 0.4 && bb.top < innerHeight * 0.4) { x1 = bb.left - 12; x0 = Math.max(12, tb.right + 10); y0 = 10; } // 가로 화면: 오른쪽 창, 나가기 버튼 옆부터 위아래 꽉
   else y1 = bb.top - 10;
   const aw = Math.max(90, x1 - x0), ah = Math.max(90, y1 - y0);
   let w = aw, h = w / a; if (h > ah) { h = ah; w = h * a; }
@@ -4545,6 +4568,31 @@ function snapFrameFor(dt) {
   photo.dist = photo.dist ? photo.dist + (want - photo.dist) * (1 - Math.exp(-dt * 6)) : want;
   return { e, people: pts.length - (e ? 1 : 0) };
 }
+// 풍경: 눈사람도 나도 안 나오면, 내 눈높이에서 바라보는 쪽을 그대로 찍어요(어디서든)
+const photoScene = () => !!(photo && !photo.withMe && !photo.key);
+const PHOTO_FOV = 56;
+function zoomPhoto(f) {
+  if (!photo) return;
+  photo.zoom = photoScene() ? clamp(photo.zoom * f, 20 / PHOTO_FOV, 80 / PHOTO_FOV) : clamp(photo.zoom * f, 0.35, 2.4);
+}
+function snapHint() {
+  const touch = document.body.classList.contains('touch');
+  if (photoScene()) return touch ? '풍경 · 밀어서 둘러보고, 두 손가락으로 확대' : '풍경 · 드래그로 둘러보고, 휠로 확대';
+  const e = photo && photo.key ? SM.get(photo.key) : null, how = touch ? '밀어서 각도, 두 손가락으로 거리' : '드래그로 각도, 휠로 거리';
+  return e ? `「${e.item.nm}」와 함께 · ${how}` : how;
+}
+function setWithMe(on) {
+  if (!photo || photo.withMe === on) return;
+  const was = photoScene();
+  photo.withMe = on;
+  if (!on) setPose(''); else { const e = photo.key && SM.get(photo.key); if (e) placeMeBeside(e); }
+  photo.zoom = 1; photo.dist = 0;
+  if (photoScene() !== was) {
+    CAM.snap = true; CAM.pitch = photoScene() ? 0.04 : 0.12; CAM.dragAt = clock;
+    if (photoScene()) CAM.yaw = photo.yaw0; // 놀 때 보던 쪽을 그대로
+  }
+  syncSnapUi(); layoutGuide();
+}
 function placeMeBeside(e) {
   P.sit = null;
   const yaw = CAM.yaw, side = photo.side || 1;
@@ -4561,14 +4609,13 @@ function enterPhoto(key = null) {
   if (rolling) dropRolling();
   if (P.sled) stopSled();
   const near = e ? Math.hypot(P.pos.x - e.x, P.pos.z - e.z) < 14 : true;
-  photo = { key: e ? key : null, withMe: near, pose: '', zoom: 1, dist: 0, side: 1, rect: null, count: 0 };
+  photo = { key: e ? key : null, withMe: near, pose: '', zoom: 1, dist: 0, side: 1, rect: null, count: 0, yaw0: CAM.yaw };
   mode = 'photo'; keys.clear();
   closeCard(); closeRank();
   document.body.classList.add('photo-mode'); $('#photo').hidden = false;
   CAM.yaw = e ? e.ry + 0.35 : P.ry; CAM.pitch = 0.12; CAM.snap = true; CAM.dragAt = clock;
   if (e && photo.withMe) placeMeBeside(e);
   syncSnapUi(); layoutGuide();
-  $('#photo-hint').textContent = e ? `「${e.item.nm}」와 함께 · 드래그로 각도, 휠·두 손가락으로 거리` : '드래그로 각도, 휠·두 손가락으로 거리를 바꿔요';
 }
 function exitPhoto() {
   if (mode !== 'photo') return;
@@ -4576,6 +4623,8 @@ function exitPhoto() {
   if (P.emote && P.emote.hold) P.emote = null;
   document.body.classList.remove('photo-mode', 'snap-busy'); $('#photo').hidden = true; $('#snap-count').hidden = true;
   camera.clearViewOffset();
+  if (camera.fov !== PHOTO_FOV) { camera.fov = PHOTO_FOV; camera.updateProjectionMatrix(); }
+  CAM.pitch = clamp(CAM.pitch, 0.04, 1.25);
   CAM.yaw = P.ry + Math.PI; CAM.snap = true;
   if (key && SM.get(key)) openCard(key);
 }
@@ -4585,8 +4634,11 @@ function syncSnapUi() {
   for (const b of $$('#snap-ratio [data-r]')) b.setAttribute('aria-pressed', String(b.dataset.r === snapRatio));
   for (const b of $$('#snap-frame [data-f]')) b.setAttribute('aria-pressed', String(b.dataset.f === snapFrame));
   $('#snap-me').setAttribute('aria-pressed', String(photo.withMe));
+  $('#snap-solo').setAttribute('aria-pressed', String(!photo.withMe));
+  $('#snap-solo').textContent = photo.key ? '눈사람만' : '풍경';
+  $('#photo-hint').textContent = snapHint();
   $('#snap-side').hidden = !(photo.key && photo.withMe);
-  $('#snap-pose').style.opacity = photo.withMe ? '' : '0.45';
+  $('#snap-pose').hidden = !photo.withMe;
 }
 function setPose(k) {
   if (!photo) return;
@@ -4606,6 +4658,7 @@ function startSnap(delay) {
 function updateSnap(dt) {
   if (mode !== 'photo' || !photo) return;
   if (photo.withMe) P.ry = dampAngle(P.ry, Math.atan2(camera.position.x - P.pos.x, camera.position.z - P.pos.z), 8, dt);
+  else if (photoScene()) P.ry = dampAngle(P.ry, CAM.yaw + Math.PI, 8, dt);
   if (photo.count) {
     const left = (photo.count - performance.now()) / 1000, el = $('#snap-count');
     if (left <= 0) { photo.count = 0; el.hidden = true; snapCapture(); }
@@ -5372,6 +5425,11 @@ function updateCamera(dt) {
     camGoal.set(wip.x, groundY(wip.x, wip.z) + h * 0.5, wip.z);
     dist = clamp(Math.max(h * 0.62 / tv, halfW / th) * 1.06, 3.2, 26);
   }
+  else if (mode === 'photo' && photo && photoScene()) {
+    // 풍경: 카메라가 내 눈 자리에 오도록 바라보는 쪽 앞에 목표를 둠
+    pitch = CAM.pitch; dist = 3; const cq = Math.cos(pitch);
+    camGoal.set(P.pos.x - Math.sin(CAM.yaw) * cq * dist, P.pos.y + 1.55 - Math.sin(pitch) * dist, P.pos.z - Math.cos(CAM.yaw) * cq * dist);
+  }
   else if (mode === 'photo' && photo) {
     const f = snapFrameFor(dt); dist = photo.dist; pitch = CAM.pitch;
     if (!f.people && clock - CAM.dragAt > 2.5 && !reducedMotion) CAM.yaw += dt * 0.12; // 눈사람만 찍을 땐 천천히 돎
@@ -5382,6 +5440,7 @@ function updateCamera(dt) {
   const gy = groundY(camera.position.x, camera.position.z) + 0.6;
   if (camera.position.y < gy) camera.position.y = gy;
   camera.lookAt(CAM.target);
+  if (mode === 'photo' && photo) { const fov = photoScene() ? clamp(PHOTO_FOV * photo.zoom, 20, 80) : PHOTO_FOV; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); } }
   if (mode === 'decorate') { const r = decoView(); camera.setViewOffset(innerWidth, innerHeight, Math.round(innerWidth / 2 - (r.x + r.w / 2)), Math.round(innerHeight / 2 - (r.y + r.h / 2)), innerWidth, innerHeight); }
   else if (mode === 'photo' && photo && photo.rect) { const r = photo.rect; camera.setViewOffset(innerWidth, innerHeight, Math.round(innerWidth / 2 - (r.x + r.w / 2)), Math.round(innerHeight / 2 - (r.y + r.h / 2)), innerWidth, innerHeight); }
   else if (camera.view && camera.view.enabled) camera.clearViewOffset();
@@ -5763,11 +5822,12 @@ view.addEventListener('pointerdown', e => {
 });
 view.addEventListener('pointermove', e => {
   if (touchPts.has(e.pointerId)) touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (touchPts.size === 2) { const d = pinchDist(); if (pinchD > 0 && d > 0) { if (mode === 'photo' && photo) photo.zoom = clamp(photo.zoom * pinchD / d, 0.35, 2.4); else CAM.dist = clamp(CAM.dist * pinchD / d, 3.5, 24); } pinchD = d; return; }
+  if (touchPts.size === 2) { const d = pinchDist(); if (pinchD > 0 && d > 0) { if (mode === 'photo' && photo) zoomPhoto(pinchD / d); else CAM.dist = clamp(CAM.dist * pinchD / d, 3.5, 24); } pinchD = d; return; }
   if (!drag || drag.id !== e.pointerId) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
   if (mode === 'intro') return;
-  CAM.yaw -= dx * 0.0055; CAM.pitch = clamp(CAM.pitch + dy * 0.004, 0.04, 1.25); CAM.dragAt = clock;
+  const sc = mode === 'photo' && photoScene();
+  CAM.yaw -= dx * (sc ? 0.0042 : 0.0055); CAM.pitch = clamp(CAM.pitch + dy * (sc ? 0.0032 : 0.004), sc ? -0.6 : 0.04, sc ? 0.8 : 1.25); CAM.dragAt = clock;
 });
 const endDrag = e => {
   touchPts.delete(e.pointerId); if (touchPts.size < 2) pinchD = 0;
@@ -5777,7 +5837,7 @@ const endDrag = e => {
   drag = null;
 };
 view.addEventListener('pointerup', endDrag); view.addEventListener('pointercancel', endDrag);
-view.addEventListener('wheel', e => { e.preventDefault(); if (mode === 'photo' && photo) photo.zoom = clamp(photo.zoom * (1 + e.deltaY * 0.0012), 0.35, 2.4); else CAM.dist = clamp(CAM.dist * (1 + e.deltaY * 0.0012), 3.5, 24); }, { passive: false });
+view.addEventListener('wheel', e => { e.preventDefault(); if (mode === 'photo' && photo) zoomPhoto(1 + e.deltaY * 0.0012); else CAM.dist = clamp(CAM.dist * (1 + e.deltaY * 0.0012), 3.5, 24); }, { passive: false });
 view.addEventListener('contextmenu', e => e.preventDefault());
 function pick(e) {
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -6008,12 +6068,15 @@ $('#photo-exit').addEventListener('click', exitPhoto);
 $('#photo-save').addEventListener('click', () => startSnap(0));
 $('#snap-timer').addEventListener('click', () => startSnap(3));
 $('#btn-photo').addEventListener('click', () => { if (mode === 'photo') exitPhoto(); else { const s = nearestSnowman(6); enterPhoto(s ? s.key : null); } });
+$('#t-photo').addEventListener('click', () => { const s = nearestSnowman(6); enterPhoto(s ? s.key : null); });
 $('#snap-pose').addEventListener('click', e => { const b = e.target.closest('[data-pose]'); if (b && photo && photo.withMe) setPose(b.dataset.pose); });
-$('#snap-ratio').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; snapRatio = b.dataset.r; LS.set('snapRatio', snapRatio); syncSnapUi(); layoutGuide(); photo && (photo.dist = 0); });
-$('#snap-frame').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; snapFrame = b.dataset.f; LS.set('snapFrame', snapFrame); syncSnapUi(); layoutGuide(); photo && (photo.dist = 0); });
-$('#snap-me').addEventListener('click', () => { if (!photo) return; photo.withMe = !photo.withMe; if (!photo.withMe) setPose(''); else { const e = photo.key && SM.get(photo.key); if (e) placeMeBeside(e); } syncSnapUi(); });
+const snapNarrow = () => matchMedia('(max-width: 520px)').matches; // 좁은 화면에선 고른 것만 보이고, 누르면 다음 것으로
+$('#snap-ratio').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; const ks = Object.keys(SNAP_RATIOS); snapRatio = snapNarrow() && b.dataset.r === snapRatio ? ks[(ks.indexOf(snapRatio) + 1) % ks.length] : b.dataset.r; LS.set('snapRatio', snapRatio); syncSnapUi(); layoutGuide(); photo && (photo.dist = 0); });
+$('#snap-frame').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; snapFrame = snapNarrow() && b.dataset.f === snapFrame ? (snapFrame === 'polaroid' ? 'none' : 'polaroid') : b.dataset.f; LS.set('snapFrame', snapFrame); syncSnapUi(); layoutGuide(); photo && (photo.dist = 0); });
+$('#snap-me').addEventListener('click', () => setWithMe(true));
+$('#snap-solo').addEventListener('click', () => setWithMe(false));
 $('#snap-side').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); if (!e) return; photo.side = -(photo.side || 1); placeMeBeside(e); });
-$('#snap-reset').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); CAM.yaw = e ? e.ry + 0.35 : P.ry; CAM.pitch = 0.12; photo.zoom = 1; photo.dist = 0; CAM.dragAt = clock; });
+$('#snap-reset').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); CAM.yaw = e ? e.ry + 0.35 : photoScene() ? CAM.yaw : P.ry; CAM.pitch = photoScene() ? 0.04 : 0.12; photo.zoom = 1; photo.dist = 0; CAM.dragAt = clock; });
 $('#shot-close').addEventListener('click', () => { $('#shot').hidden = true; });
 $('#shot-again').addEventListener('click', () => { $('#shot').hidden = true; });
 $('#shot-save').addEventListener('click', saveShot);
