@@ -1,0 +1,14 @@
+{
+  "name": "snowtown",
+  "private": true,
+  "version": "1.0.0",
+  "description": "눈사람 마을 - 직접 운영용 (Cloudflare Workers + Durable Objects)",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && wrangler dev",
+    "deploy": "node build.mjs && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.160.0"
+  }
+}

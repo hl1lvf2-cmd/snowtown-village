@@ -1,0 +1,18 @@
+{
+  // 눈사람 마을 배포 설정 (npx wrangler deploy)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "snowtown",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "durable_objects": {
+    "bindings": [{ "name": "VILLAGE", "class_name": "Village" }]
+  },
+  // 무료 플랜은 SQLite 저장소를 쓰는 Durable Object만 만들 수 있어요
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Village"] }],
+  "vars": {
+    // 한 마을에 동시에 들어올 수 있는 사람 수. 넘치면 다음 마을로 안내해요
+    "VILLAGE_CAP": "40"
+  },
+  "observability": { "enabled": true }
+}
