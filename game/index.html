@@ -372,11 +372,12 @@ body.touch.card-open #touch, body.touch.card-open #chat, body.touch.card-open #c
   body.touch.card-open #toolbar, body.touch.card-open #minimap { display: none; }
   #t-photo { right: calc(168px + env(safe-area-inset-right)); bottom: calc(144px + env(safe-area-inset-bottom)); }
   #photo .snap-bar { left: auto; right: calc(8px + env(safe-area-inset-right)); transform: none; top: calc(8px + env(safe-area-inset-top)); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(290px, 38vw); align-content: start; overflow-y: auto; }
-  .shot-card { width: min(780px, 100%); grid-template-columns: minmax(0, 1fr) minmax(200px, 250px); grid-template-rows: auto auto 1fr; align-items: start; column-gap: 14px; padding: 12px; }
+  .shot-card { width: min(780px, 100%); grid-template-columns: minmax(0, 1fr) minmax(200px, 250px); grid-template-rows: auto auto auto 1fr; align-items: start; column-gap: 14px; padding: 12px; }
   .shot-card .sheet-head { grid-column: 2; grid-row: 1; }
-  #shot-img { grid-column: 1; grid-row: 1 / span 3; max-height: calc(100vh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
-  .shot-btns { grid-column: 2; grid-row: 2; grid-template-columns: 1fr; }
-  #shot-note { grid-column: 2; grid-row: 3; font-size: 11.5px; }
+  #shot-img, #shot-live { grid-column: 1; grid-row: 1 / span 4; max-height: calc(100vh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .shot-mode { grid-column: 2; grid-row: 2; }
+  .shot-btns { grid-column: 2; grid-row: 3; grid-template-columns: 1fr; }
+  #shot-note { grid-column: 2; grid-row: 4; font-size: 11.5px; }
   #photo .snap-row { flex-wrap: wrap; overflow: visible; justify-content: flex-start; }
   #photo .snap-go { flex-wrap: nowrap; }
   #photo .snap-top { left: calc(8px + env(safe-area-inset-left)); transform: none; max-width: calc(60vw - 24px); }
@@ -672,7 +673,10 @@ body.indoor #t-throw { visibility: hidden; }
 body.snap-busy .snap-bar, body.snap-busy .snap-top { opacity: 0; pointer-events: none; }
 .shot-card { width: min(520px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 16px; display: grid; gap: 12px; border-radius: 20px; }
 .shot-card h2 { font-family: var(--font-display); font-weight: 400; font-size: 26px; margin: 0; }
-#shot-img { width: 100%; max-height: 58vh; object-fit: contain; border-radius: 10px; background: #0d1528; }
+#shot-img, #shot-live { width: 100%; max-height: 58vh; object-fit: contain; border-radius: 10px; background: #0d1528; }
+#shot-live[hidden] { display: none; }
+.shot-mode { display: flex; gap: 6px; justify-content: center; }
+.shot-mode .pill { flex: 1; max-width: 200px; }
 .shot-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .shot-btns #shot-share { grid-column: 1 / -1; }
 #shot-note { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
@@ -1006,6 +1010,11 @@ body.touch .keys.desk { display: none; }
     <div class="modal-card glass shot-card" role="dialog" aria-labelledby="shot-title">
       <div class="sheet-head" style="padding:0"><h2 id="shot-title">찰칵!</h2><button class="x" id="shot-close" type="button" aria-label="사진 닫기">×</button></div>
       <img id="shot-img" alt="방금 찍은 사진">
+      <canvas id="shot-live" aria-label="움직이는 네컷" hidden></canvas>
+      <div class="shot-mode snap-row" id="shot-mode" role="group" aria-label="보기" hidden>
+        <button class="pill" type="button" data-sm="photo">📷 사진</button>
+        <button class="pill" type="button" data-sm="live">🎞️ 움직이는 네컷</button>
+      </div>
       <div class="shot-btns">
         <button id="shot-share" class="btn primary big" type="button">공유하기</button>
         <button id="shot-save" class="btn" type="button">사진 저장</button>
@@ -5125,9 +5134,48 @@ function villageTag(v) { return String(v).padStart(2, '0'); }
 function canShareFiles() {
   try { return !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/jpeg' })], 't.jpg', { type: 'image/jpeg' })] })); } catch { return false; }
 }
+const SHOT_LIVE = { on: false, lv: null, raf: 0, busy: false, of: null };
+function setShotMode(m) {
+  const live = m === 'live' && lastShot && lastShot.live;
+  SHOT_LIVE.on = !!live;
+  for (const b of $$('#shot-mode [data-sm]')) b.setAttribute('aria-pressed', String(b.dataset.sm === (live ? 'live' : 'photo')));
+  $('#shot-img').hidden = !!live; $('#shot-live').hidden = !live;
+  if (!SHOT_LIVE.busy) $('#shot-save').textContent = live ? '영상 저장' : '사진 저장';
+  cancelAnimationFrame(SHOT_LIVE.raf);
+  if (!live) return;
+  if (SHOT_LIVE.of !== lastShot) { SHOT_LIVE.of = lastShot; SHOT_LIVE.lv = buildLive(lastShot.live); }
+  const lv = SHOT_LIVE.lv, cv = $('#shot-live'); cv.width = lv.W; cv.height = lv.H;
+  const g = cv.getContext('2d'), seq = liveSeq(lv.n), t0 = performance.now();
+  const tick = () => {
+    if ($('#shot').hidden || !SHOT_LIVE.on) return;
+    if (!SHOT_LIVE.busy) drawLive(g, lv, seq[Math.floor((performance.now() - t0) / (1000 / CLIP_FPS)) % seq.length]);
+    SHOT_LIVE.raf = requestAnimationFrame(tick);
+  };
+  tick();
+}
+async function liveVideo() {
+  if (lastShot.video) return lastShot.video;
+  if (SHOT_LIVE.busy) return null;
+  const shot = lastShot, btn = $('#shot-save');
+  SHOT_LIVE.busy = true; btn.disabled = true; $('#shot-share').disabled = true;
+  try {
+    if (SHOT_LIVE.of !== shot) { SHOT_LIVE.of = shot; SHOT_LIVE.lv = buildLive(shot.live); }
+    const cv = $('#shot-live'); cv.width = SHOT_LIVE.lv.W; cv.height = SHOT_LIVE.lv.H;
+    const r = await recordLive(cv, SHOT_LIVE.lv, p => { btn.textContent = `영상 만드는 중… ${Math.round(p * 100)}%`; });
+    shot.video = { ...r, name: shot.name.replace(/\.jpg$/, '.' + r.ext) };
+    return shot.video;
+  } catch (err) {
+    toast('이 브라우저에선 움직이는 네컷 영상을 만들 수 없어요. 크롬이나 사파리 최신 버전에서 해 보세요.', [], 5000);
+    return null;
+  } finally {
+    SHOT_LIVE.busy = false; btn.disabled = false; $('#shot-share').disabled = false;
+    btn.textContent = SHOT_LIVE.on ? '영상 저장' : '사진 저장';
+  }
+}
 function showShot() {
   if (!lastShot) return;
   $('#shot-img').src = lastShot.url;
+  $('#shot-mode').hidden = !lastShot.live;
   const n = lastShot.names.length;
   $('#shot-title').textContent = lastShot.strip ? (n > 1 ? `${n}명이 함께 네컷!` : '네컷 완성!') : n > 1 ? `${n}명이 함께 찰칵!` : '찰칵!';
   const share = canShareFiles();
@@ -5135,10 +5183,21 @@ function showShot() {
   $('#shot-note').textContent = share
     ? '공유 창에서 인스타그램을 고르면 피드나 스토리에 바로 올릴 수 있어요.'
     : '이 화면에선 바로 공유가 안 돼서, 사진을 저장한 뒤 인스타그램 앱에서 골라 올려 주세요. 휴대폰에서 열면 바로 공유할 수 있어요.';
+  if (lastShot.live) $('#shot-note').textContent += ' 🎞️ 움직이는 네컷을 누르면 영상으로도 저장할 수 있어요.';
   $('#shot').hidden = false;
+  setShotMode('photo');
 }
 async function saveShot() {
   if (!lastShot) return;
+  if (SHOT_LIVE.on && lastShot.live) {
+    const v = await liveVideo(); if (!v) return;
+    try {
+      if (NET.dl) await NET.dl.save({ filename: v.name, data: v.blob });
+      else { const u = URL.createObjectURL(v.blob), a = document.createElement('a'); a.href = u; a.download = v.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
+      toast(v.ext === 'mp4' ? '움직이는 네컷 영상을 저장했어요.' : '움직이는 네컷 영상을 저장했어요(webm). 인스타그램엔 mp4가 필요하면 휴대폰 사파리·크롬에서 다시 저장해 보세요.', [], 5000);
+    } catch (err) { if (!err || err.code !== 'declined') toast('영상을 저장하지 못했어요.'); }
+    return;
+  }
   try {
     if (NET.dl) await NET.dl.save({ filename: lastShot.name, data: lastShot.blob });
     else { const a = document.createElement('a'); a.href = lastShot.url; a.download = lastShot.name; document.body.append(a); a.click(); a.remove(); }
@@ -5149,6 +5208,13 @@ async function shareShot() {
   if (!lastShot) return;
   const url = shareUrl();
   const text = `눈사람 마을에서 ${lastShot.names.length > 1 ? '친구들이랑 ' : ''}찍었어요 ☃️ #눈사람마을${url ? '\n' + url : ''}`;
+  if (SHOT_LIVE.on && lastShot.live && navigator.share) {
+    const v = await liveVideo(); if (!v) return;
+    const file = new File([v.blob], v.name, { type: v.blob.type });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: '눈사람 마을', text }); return; } }
+    catch (err) { if (err && err.name === 'AbortError') return; }
+    await saveShot(); return;
+  }
   if (canShareFiles()) {
     const file = new File([lastShot.blob], lastShot.name, { type: 'image/jpeg' });
     try { await navigator.share({ files: [file], title: '눈사람 마을', text }); return; }
@@ -6550,6 +6616,7 @@ $('#snap-solo').addEventListener('click', () => setWithMe(false));
 $('#snap-side').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); if (!e) return; photo.side = -(photo.side || 1); placeMeBeside(e); });
 $('#snap-reset').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); CAM.yaw = e ? e.ry + 0.35 : photoScene() ? CAM.yaw : P.ry; CAM.pitch = photoScene() ? 0.04 : 0.12; photo.zoom = 1; photo.dist = 0; CAM.dragAt = clock; });
 $('#shot-close').addEventListener('click', () => { $('#shot').hidden = true; });
+$('#shot-mode').addEventListener('click', e => { const b = e.target.closest('[data-sm]'); if (b && !SHOT_LIVE.busy) { setShotMode(b.dataset.sm); sfx('pop'); } });
 $('#shot-again').addEventListener('click', () => { $('#shot').hidden = true; });
 $('#shot-save').addEventListener('click', saveShot);
 $('#shot-share').addEventListener('click', shareShot);
@@ -6920,6 +6987,7 @@ function frame(now) {
   updateGround(now);
   if (now - styleAt > 1000) { styleAt = now; stylizeScene(); }
   renderFrame();
+  if (BOOTH) boothClipTick(now);
 }
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
@@ -7130,26 +7198,94 @@ function applyFilter(src, kind) {
   }
   return c;
 }
-function composeFrame(layKey, cells, frameKey, filterKey, opts, names, scale = 1) {
-  const L = LAYOUTS[layKey], s = scale, W = Math.round(L.W * s), H = Math.round(L.H * s);
-  const out = makeCanvas(W, H), g = out.getContext('2d'), F = FRAMES[frameKey] || FRAMES.flake;
+// 프레임을 뒤판(배경·사진 자리)과 앞판(장식·글씨)으로 나눠 그림. 사진은 그 사이에 끼움
+function frameLayers(layKey, frameKey, opts, names, scale = 1) {
+  const L = LAYOUTS[layKey], s = scale, W = Math.round(L.W * s), H = Math.round(L.H * s), F = FRAMES[frameKey] || FRAMES.flake;
+  const back = makeCanvas(W, H), g = back.getContext('2d');
   frameBack(g, frameKey, W, H, s);
   const pos = frameCells(L, s);
-  pos.forEach((p, i) => {
-    g.save(); g.shadowColor = 'rgba(0,0,0,0.18)'; g.shadowBlur = 8 * s; g.shadowOffsetY = 3 * s; g.fillStyle = '#ffffff'; g.fillRect(p.x - 3 * s, p.y - 3 * s, p.w + 6 * s, p.h + 6 * s); g.restore();
-    const c = cells[i];
-    if (c) g.drawImage(applyFilter(c, filterKey), p.x, p.y, p.w, p.h);
-    else { g.fillStyle = '#dfe6f0'; g.fillRect(p.x, p.y, p.w, p.h); g.fillStyle = '#9aa6b8'; g.font = `${Math.round(40 * s)}px sans-serif`; g.textAlign = 'center'; g.fillText('📷', p.x + p.w / 2, p.y + p.h / 2 + 14 * s); }
-  });
-  frameFront(g, frameKey, L, W, H, s, pos);
+  for (const p of pos) { g.save(); g.shadowColor = 'rgba(0,0,0,0.18)'; g.shadowBlur = 8 * s; g.shadowOffsetY = 3 * s; g.fillStyle = '#ffffff'; g.fillRect(p.x - 3 * s, p.y - 3 * s, p.w + 6 * s, p.h + 6 * s); g.restore(); }
+  const front = makeCanvas(W, H), f = front.getContext('2d');
+  frameFront(f, frameKey, L, W, H, s, pos);
   // 아래 글씨: 가게 이름 · 날짜 · 이름
   const fy = H - L.foot * s;
-  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = F.ink;
-  g.font = `${Math.round(L.foot * 0.25 * s)}px Jua, "IBM Plex Sans KR", sans-serif`;
-  g.fillText('☃ 눈사람 사진관', W / 2, fy + L.foot * 0.4 * s, W - L.m * 4 * s);
+  f.textAlign = 'center'; f.textBaseline = 'middle'; f.fillStyle = F.ink;
+  f.font = `${Math.round(L.foot * 0.25 * s)}px Jua, "IBM Plex Sans KR", sans-serif`;
+  f.fillText('☃ 눈사람 사진관', W / 2, fy + L.foot * 0.4 * s, W - L.m * 4 * s);
   const line = [opts.names && names.length ? names.join(' · ') : '', opts.date ? fmtDateDot(Date.now()) : ''].filter(Boolean).join('  ·  ');
-  if (line) { g.fillStyle = F.sub; g.font = `${Math.round(L.foot * 0.1 * s)}px "IBM Plex Sans KR", sans-serif`; g.fillText(line, W / 2, fy + L.foot * 0.66 * s, W - L.m * 4 * s); }
+  if (line) { f.fillStyle = F.sub; f.font = `${Math.round(L.foot * 0.1 * s)}px "IBM Plex Sans KR", sans-serif`; f.fillText(line, W / 2, fy + L.foot * 0.66 * s, W - L.m * 4 * s); }
+  return { W, H, s, pos, back, front };
+}
+function emptyCell(g, p, s) { g.fillStyle = '#dfe6f0'; g.fillRect(p.x, p.y, p.w, p.h); g.fillStyle = '#9aa6b8'; g.font = `${Math.round(40 * s)}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText('📷', p.x + p.w / 2, p.y + p.h / 2 + 14 * s); }
+function composeFrame(layKey, cells, frameKey, filterKey, opts, names, scale = 1) {
+  const Ly = frameLayers(layKey, frameKey, opts, names, scale), out = makeCanvas(Ly.W, Ly.H), g = out.getContext('2d');
+  g.drawImage(Ly.back, 0, 0);
+  Ly.pos.forEach((p, i) => { const c = cells[i]; if (c) g.drawImage(applyFilter(c, filterKey), p.x, p.y, p.w, p.h); else emptyCell(g, p, Ly.s); });
+  g.drawImage(Ly.front, 0, 0);
   return out;
+}
+
+/* ---------- 움직이는 네컷: 셔터 앞뒤 1.5초를 작게 모아 두었다가 네 칸이 같이 움직이게 ---------- */
+const CLIP_FPS = 10, CLIP_PRE = 10, CLIP_POST = 4, LIVE_SCALE = { strip: 0.36, grid: 0.4 }, LIVE_LOOPS = 3;
+function clipSize(lay) { const L = LAYOUTS[lay], s = LIVE_SCALE[lay] || 0.4; return { w: Math.round(L.cw * s), h: Math.round(L.ch * s) }; }
+function fitCanvas(c, w, h) { if (c.width === w && c.height === h) return c; const t = makeCanvas(w, h); t.getContext('2d').drawImage(c, 0, 0, w, h); return t; }
+// 매 화면을 그린 직후: 부스 안내선 칸만 잘라 작은 그림으로 모아 둠
+function boothClipTick(now) {
+  if (!BOOTH || !BOOTH.rect) return;
+  const pending = BOOTH.clips && BOOTH.clips.some(c => c && c.need > 0);
+  if (BOOTH.phase !== 'shoot' && !pending) return;
+  if (now - (BOOTH.clipAt || 0) < 1000 / CLIP_FPS - 4) return;
+  BOOTH.clipAt = now;
+  const r = BOOTH.rect, src = renderer.domElement, k = src.width / innerWidth, { w, h } = clipSize(BOOTH.lay), c = makeCanvas(w, h);
+  try { c.getContext('2d').drawImage(src, r.x * k, r.y * k, r.w * k, r.h * k, 0, 0, w, h); } catch { return; }
+  const ring = BOOTH.ring || (BOOTH.ring = []); ring.push(c); if (ring.length > CLIP_PRE) ring.shift();
+  if (pending) for (const cl of BOOTH.clips) if (cl && cl.need > 0) { cl.f.push(c); cl.need--; }
+}
+// 셔터 순간: 앞서 모아 둔 장면 + 찍힌 사진 한 장, 뒤로 몇 장 더 받음
+function boothClipMark(i) {
+  if (!BOOTH) return;
+  const { w, h } = clipSize(BOOTH.lay), pre = (BOOTH.ring || []).slice(), shot = BOOTH.shots[i];
+  (BOOTH.clips || (BOOTH.clips = []))[i] = { f: shot ? [...pre, fitCanvas(shot, w, h)] : pre, k: pre.length, need: CLIP_POST };
+}
+// 고른 네 칸으로 움직이는 네컷 재료를 만듦(필터는 한 번만 입힘)
+function buildLive(spec) {
+  const Ly = frameLayers(spec.lay, spec.fr, spec.op, spec.names, LIVE_SCALE[spec.lay] || 0.4), { w, h } = clipSize(spec.lay);
+  const cells = spec.clips.map((cl, i) => {
+    const still = spec.stills[i];
+    if (cl && cl.f.length) return { k: cl.k, f: cl.f.map(c => applyFilter(fitCanvas(c, w, h), spec.fl)) };
+    return still ? { k: 0, f: [applyFilter(fitCanvas(still, w, h), spec.fl)] } : null;
+  });
+  const K = Math.max(0, ...cells.map(c => (c ? c.k : 0))), n = Math.max(1, ...cells.map(c => (c ? K - c.k + c.f.length : 1)));
+  return { ...Ly, cells, K, n };
+}
+function drawLive(g, lv, t) {
+  g.drawImage(lv.back, 0, 0);
+  lv.pos.forEach((p, i) => { const c = lv.cells[i]; if (!c) { emptyCell(g, p, lv.s); return; } g.drawImage(c.f[clamp(t - (lv.K - c.k), 0, c.f.length - 1)], p.x, p.y, p.w, p.h); });
+  g.drawImage(lv.front, 0, 0);
+}
+// 앞으로 갔다가 되돌아오는 순서(끊김 없이 반복)
+function liveSeq(n) { const a = []; for (let i = 0; i < n; i++) a.push(i); for (let i = n - 2; i > 0; i--) a.push(i); return a; }
+function liveMime() {
+  if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return '';
+  for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch { /* 다음 */ } }
+  return '';
+}
+// 화면의 캔버스에 그리면서 그대로 녹화(실제 시간만큼 걸려요)
+async function recordLive(cv, lv, onProgress) {
+  const mt = liveMime(); if (!mt) throw new Error('unsupported');
+  const g = cv.getContext('2d'); drawLive(g, lv, 0);
+  const st = cv.captureStream(30), rec = new MediaRecorder(st, { mimeType: mt, videoBitsPerSecond: 3000000 }), parts = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+  const stopped = new Promise(res => { rec.onstop = res; });
+  rec.start(250);
+  const seq = liveSeq(lv.n), total = seq.length * LIVE_LOOPS, t0 = performance.now();
+  for (let i = 0; i < total; i++) {
+    drawLive(g, lv, seq[i % seq.length]); onProgress && onProgress(i / total);
+    const wait = t0 + (i + 1) * 1000 / CLIP_FPS - performance.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  }
+  rec.stop(); await stopped; st.getTracks().forEach(t => t.stop());
+  const type = mt.split(';')[0];
+  return { blob: new Blob(parts, { type }), ext: type === 'video/mp4' ? 'mp4' : 'webm' };
 }
 
 /* ---------- 사진관 짓기 ---------- */
@@ -7507,12 +7643,12 @@ function boothPose(k) {
 function boothShoot() {
   const L = LAYOUTS[BOOTH.lay], i = BOOTH.n;
   const c = renderBoothShot(BOOTH.b, L.cw, L.ch);
-  BOOTH.shots[i] = c; BOOTH.n++;
+  BOOTH.shots[i] = c; BOOTH.n++; boothClipMark(i);
   snapFlash(); sfx('shutter'); renderBoothThumbs();
 }
 function boothCaptureAs(i) {
   const L = LAYOUTS[BOOTH.lay];
-  BOOTH.shots[i] = renderBoothShot(BOOTH.b, L.cw, L.ch);
+  BOOTH.shots[i] = renderBoothShot(BOOTH.b, L.cw, L.ch); boothClipMark(i);
   snapFlash(); sfx('shutter'); renderBoothThumbs();
 }
 function updateBooth(now) {
@@ -7541,7 +7677,8 @@ function updateBooth(now) {
     } else if (BOOTH.phase === 'pick') { const left = BOOTH.deadline - now; $('#bpick-timer').textContent = Math.max(0, Math.ceil(left / 1000)); if (left <= 0) boothPickDone(); }
     else if (BOOTH.phase === 'deco') { const left = BOOTH.deadline - now; $('#bdeco-timer').textContent = Math.max(0, Math.ceil(left / 1000)); if (left <= 0) boothDecoDone(); }
   } else {
-    // 손님: 찍는 사람의 상태를 따라감
+    // 손님: 찍는 사람의 상태를 따라감(출력이 시작되면 한 번만)
+    if (BOOTH.printed) return;
     let h = null; for (const pe of peers.values()) if (pe.uid === BOOTH.hostUid) h = pe;
     const bt = h && h.bt;
     if (!bt || bt.s !== BOOTH.sid) { toast('촬영이 끝났어요.'); endBooth(); return; }
@@ -7634,16 +7771,18 @@ function boothDecoDone() {
   BOOTH.phase = 'print';
   const names = boothFrame(BOOTH.b, 1).names;
   boothDone = { bt: { s: BOOTH.sid, b: BOOTH.b, ph: 'done', n: SHOTS, c: 0, lay: BOOTH.lay, pk: BOOTH.pick.slice(), fr: BOOTH.frame, fl: BOOTH.filter, op: (BOOTH.date ? 1 : 0) | (BOOTH.names ? 2 : 0) }, until: performance.now() + 8000 };
-  const cells = BOOTH.pick.map(i => BOOTH.shots[i]);
-  printBoothStrip(composeFrame(BOOTH.lay, cells, BOOTH.frame, BOOTH.filter, { date: BOOTH.date, names: BOOTH.names }, names), names, BOOTH.lay);
+  const cells = BOOTH.pick.map(i => BOOTH.shots[i]), op = { date: BOOTH.date, names: BOOTH.names };
+  const live = { lay: BOOTH.lay, fr: BOOTH.frame, fl: BOOTH.filter, op, names, stills: cells, clips: BOOTH.pick.map(i => (BOOTH.clips || [])[i] || null) };
+  printBoothStrip(composeFrame(BOOTH.lay, cells, BOOTH.frame, BOOTH.filter, op, names), names, BOOTH.lay, '', live);
 }
 function boothGuestPrint(h, bt) {
-  const cells = bt.pk.map(i => BOOTH.shots[i] || null), names = boothFrame(BOOTH.b, 1).names;
-  BOOTH.phase = 'print';
-  printBoothStrip(composeFrame(bt.lay, cells, bt.fr, bt.fl, { date: !!(bt.op & 1), names: !!(bt.op & 2) }, names), names, bt.lay, h.nick);
+  const cells = bt.pk.map(i => BOOTH.shots[i] || null), names = boothFrame(BOOTH.b, 1).names, op = { date: !!(bt.op & 1), names: !!(bt.op & 2) };
+  BOOTH.phase = 'print'; BOOTH.printed = true;
+  const live = { lay: bt.lay, fr: bt.fr, fl: bt.fl, op, names, stills: cells, clips: bt.pk.map(i => (BOOTH.clips || [])[i] || null) };
+  printBoothStrip(composeFrame(bt.lay, cells, bt.fr, bt.fl, op, names), names, bt.lay, h.nick, live);
 }
 // 출력: 사진이 아래로 스르륵 나오고, 받아서 저장·공유
-function printBoothStrip(canvas, names, lay, by) {
+function printBoothStrip(canvas, names, lay, by, live) {
   const pr = $('#bprint'), img = $('#bprint-img');
   img.className = lay === 'grid' ? 'grid' : '';
   pr.hidden = false; $('#bprint-msg').textContent = by ? `${by}님이 고른 네컷이 나오고 있어요…` : '사진이 나오고 있어요…';
@@ -7656,7 +7795,8 @@ function printBoothStrip(canvas, names, lay, by) {
       pr.hidden = true;
       if (!blob) { toast('사진을 만들지 못했어요.'); endBooth(); return; }
       if (lastShot && lastShot.url) URL.revokeObjectURL(lastShot.url);
-      lastShot = { blob, url: URL.createObjectURL(blob), name: `눈사람사진관-네컷-${Date.now() % 100000}.jpg`, names, title: '네컷', strip: true };
+      const has = live && live.clips.some(c => c && c.f.length > 1);
+      lastShot = { blob, url: URL.createObjectURL(blob), name: `눈사람사진관-네컷-${Date.now() % 100000}.jpg`, names, title: '네컷', strip: true, live: has ? live : null };
       endBooth(); showShot(); mission('photo'); mission('cut4'); sfx('chime');
     }, 2600);
   }, 'image/jpeg', 0.9);
