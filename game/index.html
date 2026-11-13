@@ -462,6 +462,10 @@ body.touch #snack .sheet-head { padding-top: 8px; padding-bottom: 6px; }
 .sw-row { display: flex; gap: 7px; flex-wrap: wrap; }
 .sw-row .sw { width: 28px; height: 28px; }
 .look-actions { display: flex; gap: 10px; }
+.chip.sky { background: rgba(120, 90, 220, 0.28); border-color: rgba(190, 170, 255, 0.45); color: #efe9ff; font-variant-numeric: tabular-nums; }
+.chip.sky.live { background: linear-gradient(90deg, rgba(60, 200, 150, 0.45), rgba(140, 90, 230, 0.45)); color: #fff; animation: skyglow 2.4s ease-in-out infinite; }
+@keyframes skyglow { 50% { box-shadow: 0 0 14px rgba(140, 255, 210, 0.45); } }
+@media (orientation: portrait) and (max-width: 520px) { body.touch #chip-sky .sk-nm { display: none; } }
 .lbl-note { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
 .prop-rows { display: grid; gap: 6px; }
 .prop-row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -729,6 +733,7 @@ body.touch .keys.desk { display: none; }
       <div class="logo">눈사람 마을</div>
       <div class="chips">
         <span class="chip" id="chip-online"><i class="dot"></i><span>연결 중</span></span>
+        <button class="chip sky" id="chip-sky" type="button" hidden></button>
         <span class="chip theme" id="chip-theme"></span>
         <span class="chip" id="chip-snow"></span>
         <span class="chip warn" id="chip-save" hidden></span>
@@ -811,6 +816,7 @@ body.touch .keys.desk { display: none; }
           <button type="button" data-emote="cheer" title="만세 (3)" aria-label="만세">🙌</button>
           <button type="button" data-emote="heart" title="하트 (4)" aria-label="하트">❤️</button>
           <button type="button" data-emote="cheers" title="짠 (5)" aria-label="짠">🥂</button>
+          <button type="button" data-emote="wish" id="emo-wish" title="소원 빌기 (6)" aria-label="소원 빌기" hidden>🌠</button>
         </div>
       </div>
     </div>
@@ -1347,7 +1353,7 @@ const DEFAULT_DECO = { e: 'coal', n: 'carrot', m: 'smile', h: 'none', a: 'twig',
 const NAME_A = ['포근한', '수줍은', '용감한', '졸린', '반짝이는', '씩씩한', '느긋한', '말랑한', '배고픈', '새침한'];
 const NAME_B = ['뭉치', '눈송이', '눈보라', '솜뭉치', '하양이', '얼음공', '당근코', '눈덩이', '서리', '함박이'];
 const randomName = () => NAME_A[Math.floor(Math.random() * NAME_A.length)] + ' ' + NAME_B[Math.floor(Math.random() * NAME_B.length)];
-const EMOTES = { wave: { emoji: '👋', dur: 2.4 }, dance: { emoji: '💃', dur: 3.2 }, cheer: { emoji: '🙌', dur: 2.4 }, heart: { emoji: '❤️', dur: 2.4 }, cheers: { emoji: '🥂', dur: 2.0 } };
+const EMOTES = { wave: { emoji: '👋', dur: 2.4 }, dance: { emoji: '💃', dur: 3.2 }, cheer: { emoji: '🙌', dur: 2.4 }, heart: { emoji: '❤️', dur: 2.4 }, cheers: { emoji: '🥂', dur: 2.0 }, wish: { emoji: '🌠', dur: 2.6 } };
 
 /* ================================================================
    지형
@@ -1446,6 +1452,165 @@ const GLOW_WARM = glowTexture('rgba(255,236,190,1)', 'rgba(255,196,110,0.45)');
 const GLOW_COOL = glowTexture('rgba(255,255,255,1)', 'rgba(210,225,255,0.4)');
 const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_COOL, fog: false, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending }));
 moon.scale.setScalar(70); moon.userData.noCurve = true; scene.add(moon);
+
+/* ================================================================
+   밤하늘 이벤트: 매시 정각 별똥별 비(6분), 매시 30분 오로라(10분).
+   시계만 보고 정하니 같은 시간에 접속한 친구들이 같은 순간에 함께 봐요
+   ================================================================ */
+const SKY_EVENTS = [
+  { k: 'meteor', nm: '별똥별 비', ic: '🌠', at: 0, dur: 6 },
+  { k: 'aurora', nm: '오로라', ic: '🌌', at: 30, dur: 10 },
+];
+const SKY = { force: null, aA: 0, mA: 0, told: new Set(), met: [], nextMet: 0, uiAt: 0, rad: 0, wishes: 0 };
+function skyNow(t = Date.now()) {
+  if (SKY.force && t < SKY.force.end) return { cur: { ev: SKY_EVENTS.find(e => e.k === SKY.force.k), start: SKY.force.start, end: SKY.force.end }, next: null };
+  const HR = 3600000, h0 = Math.floor(t / HR) * HR;
+  let cur = null, next = null;
+  for (const ev of SKY_EVENTS) for (const base of [h0 - HR, h0, h0 + HR]) {
+    const start = base + ev.at * 60000, end = start + ev.dur * 60000;
+    if (t >= start && t < end) cur = { ev, start, end };
+    else if (start > t && (!next || start < next.start)) next = { ev, start, end };
+  }
+  return { cur, next };
+}
+// 시험·미리보기용: ?sky=aurora 또는 ?sky=meteor
+function skyForce(k, sec = 180) { const t = Date.now(); SKY.force = k && SKY_EVENTS.some(e => e.k === k) ? { k, start: t - 30000, end: t + sec * 1000 } : null; }
+const AURORA_U = { t: { value: 0 }, a: { value: 0 } };
+const aurora = (() => {
+  const g = new THREE.Group(); g.visible = false; g.userData.noCurve = true; g.renderOrder = 1;
+  const vs = `uniform float t; uniform float seed; varying vec2 vUv;
+void main() {
+  vUv = uv; vec3 p = position;
+  float w = sin(uv.x * 11.0 + t * 0.35 + seed) * 0.05 + sin(uv.x * 29.0 - t * 0.6 + seed * 2.0) * 0.022;
+  p.xz *= 1.0 + w;
+  p.y += (1.0 - uv.y) * sin(uv.x * 7.0 + t * 0.25 + seed) * 14.0;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
+  const fs = `uniform float t; uniform float a; uniform float seed; varying vec2 vUv;
+void main() {
+  float x = vUv.x, y = vUv.y;
+  float rays = 0.5 + 0.5 * sin(x * 170.0 + seed * 5.0 + sin(x * 21.0 + t * 0.7) * 3.0 + t * 0.9);
+  rays = mix(0.35, 1.0, rays);
+  float band = 0.5 + 0.5 * sin(x * 13.0 - t * 0.45 + seed);
+  float base = smoothstep(0.0, 0.07, y) * pow(1.0 - y, 1.5);
+  float edge = smoothstep(0.0, 0.14, x) * smoothstep(1.0, 0.86, x);
+  vec3 col = mix(vec3(0.3, 1.0, 0.6), vec3(0.2, 0.85, 1.0), 0.5 + 0.5 * sin(x * 5.0 + seed));
+  col = mix(col, vec3(0.85, 0.38, 1.0), smoothstep(0.35, 0.95, y));
+  gl_FragColor = vec4(col, clamp(base * rays * (0.45 + 0.55 * band) * edge * a * 1.25, 0.0, 1.0));
+}`;
+  const rib = (a0, a1, r, y0, y1, seed) => {
+    const n = 110, pos = [], uv = [], idx = [];
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, an = a0 + (a1 - a0) * u, x = Math.cos(an) * r, z = Math.sin(an) * r;
+      pos.push(x, y0, z, x, y1, z); uv.push(u, 0, u, 1);
+      if (i < n) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
+    const m = new THREE.ShaderMaterial({ uniforms: { t: AURORA_U.t, a: AURORA_U.a, seed: { value: seed } }, vertexShader: vs, fragmentShader: fs, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+    const o = new THREE.Mesh(geo, m); o.frustumCulled = false; o.userData.noCurve = true; o.userData.cwDone = true; o.renderOrder = 1; g.add(o);
+  };
+  rib(0.15, 2.15, 390, 24, 190, 0.0); rib(2.35, 4.15, 430, 32, 225, 1.7); rib(4.3, 6.2, 405, 20, 170, 3.1); rib(1.0, 3.1, 470, 58, 255, 4.6); rib(3.6, 5.4, 480, 64, 240, 2.4);
+  scene.add(g); return g;
+})();
+// 별똥별: 머리는 밝고 꼬리는 흐려지는 가는 띠. 하늘 반지름 450에 붙어서 흘러감
+const meteorG = new THREE.Group(); meteorG.userData.noCurve = true; scene.add(meteorG);
+const METEOR_VS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+const METEOR_FS = `uniform float f; varying vec2 vUv;
+void main() { float h = vUv.x, ac = 1.0 - abs(vUv.y - 0.5) * 2.0;
+  float k = pow(h, 2.2) * pow(ac, 1.3 + (1.0 - h) * 2.0) * f;
+  gl_FragColor = vec4(vec3(0.85, 0.92, 1.0) + vec3(0.3, 0.25, 0.08) * pow(h, 8.0), clamp(k * 2.0, 0.0, 1.0)); }`;
+for (let i = 0; i < 12; i++) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 0, 1, 1, 0, 1, 1], 2)); geo.setIndex([0, 2, 1, 1, 2, 3]);
+  const m = new THREE.ShaderMaterial({ uniforms: { f: { value: 0 } }, vertexShader: METEOR_VS, fragmentShader: METEOR_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+  const o = new THREE.Mesh(geo, m); o.frustumCulled = false; o.visible = false; o.userData.noCurve = true; o.userData.cwDone = true; meteorG.add(o);
+  SKY.met.push({ o, on: false, t: 0, life: 1, p0: new THREE.Vector3(), v: new THREE.Vector3(), len: 50, w: 2 });
+}
+const skyV = { h: new THREE.Vector3(), tl: new THREE.Vector3(), s: new THREE.Vector3(), d: new THREE.Vector3() };
+const skyDir = (az, el, out) => out.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+function spawnMeteor(shower) {
+  const m = SKY.met.find(x => !x.on); if (!m) return;
+  // 카메라가 보는 쪽 하늘(좌우 60°)에 나타남
+  const fwd = Math.atan2(-Math.sin(CAM.yaw), -Math.cos(CAM.yaw)), az = fwd + (Math.random() - 0.5) * 2.1, el = 0.1 + Math.random() * 0.3;
+  skyDir(az, el, m.p0).multiplyScalar(450);
+  if (shower) { skyDir(fwd + SKY.rad, 1.05, skyV.d).multiplyScalar(450); m.v.copy(m.p0).sub(skyV.d); }
+  else m.v.set(Math.random() - 0.5, -0.7, Math.random() - 0.5);
+  m.v.addScaledVector(m.p0, -m.v.dot(m.p0) / m.p0.lengthSq()).normalize();
+  if (m.v.y > -0.15) { m.v.y = -0.15 - Math.random() * 0.3; m.v.normalize(); }
+  m.on = true; m.t = 0; m.life = 0.8 + Math.random() * 0.6; m.len = 60 + Math.random() * 50; m.w = 2.8 + Math.random() * 1.6; m.speed = 150 + Math.random() * 90; m.o.visible = true;
+}
+function updateMeteors(dt) {
+  for (const m of SKY.met) {
+    if (!m.on) continue;
+    m.t += dt; const k = m.t / m.life;
+    if (k >= 1) { m.on = false; m.o.visible = false; continue; }
+    const s = m.speed * m.t, { h, tl, s: side } = skyV;
+    h.copy(m.p0).addScaledVector(m.v, s).setLength(450);
+    tl.copy(m.p0).addScaledVector(m.v, Math.max(0, s - m.len)).setLength(450);
+    side.copy(h).sub(tl).cross(h).setLength(m.w * (0.6 + 0.4 * Math.sin(Math.PI * k)));
+    const a = m.o.geometry.attributes.position, w2 = side.clone().multiplyScalar(0.25);
+    a.setXYZ(0, tl.x - w2.x, tl.y - w2.y, tl.z - w2.z); a.setXYZ(1, tl.x + w2.x, tl.y + w2.y, tl.z + w2.z);
+    a.setXYZ(2, h.x - side.x, h.y - side.y, h.z - side.z); a.setXYZ(3, h.x + side.x, h.y + side.y, h.z + side.z);
+    a.needsUpdate = true;
+    m.o.material.uniforms.f.value = Math.pow(Math.sin(Math.PI * k), 0.6);
+  }
+}
+const skyEase = (t, start, end) => clamp(Math.min((t - start) / 25000, (end - t) / 25000), 0, 1);
+function updateSky(dt, now) {
+  const t = Date.now(), st = skyNow(t), cur = st.cur, show = themeName === 'night' && !indoor;
+  const aT = cur && cur.ev.k === 'aurora' ? skyEase(t, cur.start, cur.end) : 0, mT = cur && cur.ev.k === 'meteor' ? skyEase(t, cur.start, cur.end) : 0;
+  SKY.aA += (aT - SKY.aA) * Math.min(1, dt * 1.5); SKY.mA = mT;
+  AURORA_U.t.value += dt; AURORA_U.a.value = SKY.aA;
+  aurora.visible = show && SKY.aA > 0.01; aurora.position.copy(camera.position);
+  meteorG.visible = show; meteorG.position.copy(camera.position);
+  if (SKY.mA > 0.05 && SKY.nextMet - clock > 1.2) SKY.nextMet = clock;
+  if (show && clock > SKY.nextMet) {
+    if (SKY.mA > 0.05) { spawnMeteor(true); SKY.nextMet = clock + (0.25 + Math.random() * 0.6) / SKY.mA; }
+    else { if (SKY.nextMet) spawnMeteor(false); SKY.nextMet = clock + 25 + Math.random() * 40; }
+  }
+  updateMeteors(dt);
+  if (now - SKY.uiAt > 1000) { SKY.uiAt = now; skyUi(st, t); }
+}
+const skyMeteorOn = () => SKY.met.some(m => m.on && m.t / m.life > 0.1 && m.t / m.life < 0.9);
+function skyLookUp() { if (mode !== 'play') return; CAM.pitch = 0.05; CAM.dist = Math.max(CAM.dist, 12); }
+function skyUi(st, t) {
+  const chip = $('#chip-sky'), cur = st.cur, nx = st.next;
+  // 좁은 휴대폰 세로 화면에선 이름을 숨기고 아이콘과 시간만
+  let txt = '';
+  if (cur) { const left = Math.max(0, Math.ceil((cur.end - t) / 1000)); txt = `${cur.ev.ic} <span class="sk-nm">${cur.ev.nm} 중 · </span>${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; }
+  else if (nx && nx.start - t < 15 * 60000) { const s = Math.ceil((nx.start - t) / 1000); txt = `${nx.ev.ic} <span class="sk-nm">${nx.ev.nm} </span>${s < 60 ? s + '초' : Math.ceil(s / 60) + '분'} 뒤`; }
+  if (SKY.chip !== txt) { SKY.chip = txt; chip.innerHTML = txt; chip.title = cur ? `${cur.ev.nm} 중` : nx ? `${nx.ev.nm} 예정` : ''; }
+  chip.hidden = !txt; chip.classList.toggle('live', !!cur);
+  const wish = $('#emo-wish'), wOn = !!(cur && cur.ev.k === 'meteor');
+  if (wish.hidden === wOn) wish.hidden = !wOn;
+  if (!entered || mode === 'intro') return;
+  const night = themeName === 'night', acts = [];
+  if (!night) acts.push({ label: '밤하늘로 보기', fn: () => applyTheme('night') });
+  if (nx && nx.start - t < 120000 && nx.start - t > 0 && !SKY.told.has('pre' + nx.start)) {
+    SKY.told.add('pre' + nx.start);
+    toast(nx.ev.k === 'meteor' ? `🌠 2분 뒤 별똥별 비가 내려요! ${indoor ? '밖으로 나가서 ' : ''}하늘을 올려다봐요.` : `🌌 2분 뒤 오로라가 떠요! ${indoor ? '밖으로 나가서 ' : ''}탁 트인 곳에서 하늘을 봐요.`, acts, 6000);
+  }
+  if (cur && !SKY.told.has('go' + cur.start)) {
+    SKY.told.add('go' + cur.start);
+    if (night && !indoor) acts.push({ label: '하늘 보기', fn: skyLookUp });
+    if (cur.ev.k === 'aurora' && night && !indoor) acts.push({ label: '📷 하늘 찍기', fn: () => { if (mode === 'play') enterPhoto(null); } });
+    const where = indoor ? ' 밖으로 나가면 보여요.' : '';
+    toast(cur.ev.k === 'meteor' ? `🌠 별똥별 비가 쏟아져요! 별똥별이 지나갈 때 🌠 버튼(6)으로 소원을 빌어요.${where}` : `🌌 오로라가 떴어요! 마을 하늘이 초록빛으로 일렁여요.${where}`, acts, 7000);
+    sfx('chime');
+  }
+}
+// 소원 빌기: 별똥별이 지나가는 순간에 빌어야 이뤄져요
+function skyWish() {
+  if (!me) return;
+  const cur = skyNow().cur;
+  if (themeName !== 'night' || indoor) { toast('밤하늘이 보이는 바깥에서 빌어요 🌠'); return; }
+  if (!skyMeteorOn()) { toast(cur && cur.ev.k === 'meteor' ? '별똥별이 지나가는 순간에 빌어야 이뤄진대요. 하늘을 잘 봐요 🌠' : '별똥별이 보일 때 빌어요 🌠'); return; }
+  const day = fmtDateDot(Date.now()), w = LS.get('wishes', null), n = (w && w.d === day ? w.n : 0) + 1;
+  LS.set('wishes', { d: day, n });
+  burst(P.pos.x, P.pos.y + 2.4, P.pos.z, 22, ['#fff6c8', '#ffe27a', '#ffffff', '#bfe3ff'], 1.4, 4.2, 0.04, 1.4);
+  sfx('chime'); toast(`✨ 소원을 빌었어요! 오늘 ${n}번째 소원`);
+}
 
 // 빛
 const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 1);
@@ -3160,6 +3325,12 @@ function poseEmote(o, u, k, et, t) {
     const up = ease(et / 0.4), sw = Math.sin(et * 4.2) * up;
     setArm('L', -1.59 + 0.06 * sw, 0.86, -0.55, -0.4, -1.07, up); setArm('R', -1.59 - 0.06 * sw, 0.86, -0.55, -0.4, -1.07, up);
     o.tz = 0.07 * sw; o.bx = 0.035 * sw; o.hz = 0.14 * sw + 0.04 * up; o.by = -0.012 - 0.018 * Math.abs(Math.sin(et * 4.2)) * up; o.tx = 0.03 * up;
+    footTo(o, 'l', 0.01, 0); footTo(o, 'r', 0.01, 0);
+  } else if (k === 'wish') {
+    // 두 손을 가슴 앞에 모으고 하늘을 올려다봄
+    const up = ease(et / 0.35), br = Math.sin(et * 2.4) * up;
+    setArm('L', -1.12, 0.6, -1.3, -0.25, -0.95, up); setArm('R', -1.12, 0.6, -1.3, -0.25, -0.95, up);
+    o.hx = -0.34 * up + 0.03 * br; o.tx = -0.05 * up; o.by = -0.012 * up;
     footTo(o, 'l', 0.01, 0); footTo(o, 'r', 0.01, 0);
   } else if (k === 'dance') {
     // 박자에 맞춰 무릎 바운스·좌우 스텝 → 한 바퀴 빙글 → 손가락 하늘로 마무리
@@ -5835,6 +6006,7 @@ function doEmote(k) {
   P.emote = { k, t0: clock }; myEmote = { n: ++counters.em, k };
   if (k === 'heart' && me) burst(P.pos.x, P.pos.y + 2.2, P.pos.z, 14, ['#ff6b8f', '#ffb3c6'], 1.5, 3, 0.1, 1);
   if (k === 'cheers') { sfx('clink'); for (const pe of peers.values()) if (pe.emote && pe.emote.k === 'cheers' && clock - pe.emote.t0 < 2.2) cheersWith(pe); }
+  if (k === 'wish') skyWish();
 }
 // 짠: 가까이 있는 친구와 2초 안에 같이 하면 함께 건배
 function cheersWith(pe) {
@@ -6368,10 +6540,10 @@ addEventListener('keydown', e => {
     case 'KeyH': $('#help').hidden = !$('#help').hidden; break;
     case 'KeyP': { if (mode === 'photo') exitPhoto(); else { const s = cardKey ? SM.get(cardKey) : nearestSnowman(6); enterPhoto(s ? s.key : null); } break; }
     case 'Enter': if (mode === 'play') { e.preventDefault(); $('#chat-input').focus(); } break;
-    case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4': case 'Digit5': {
+    case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4': case 'Digit5': case 'Digit6': {
       const n = +e.code.slice(5) - 1;
       if (!$('#snack').hidden) { const k = Object.keys(FOODS)[n]; if (k) takeFood(k); break; }
-      doEmote(['wave', 'dance', 'cheer', 'heart', 'cheers'][n]); break;
+      doEmote(['wave', 'dance', 'cheer', 'heart', 'cheers', 'wish'][n]); break;
     }
     case 'Escape': closeTop(); break;
   }
@@ -6616,6 +6788,8 @@ $('#snap-solo').addEventListener('click', () => setWithMe(false));
 $('#snap-side').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); if (!e) return; photo.side = -(photo.side || 1); placeMeBeside(e); });
 $('#snap-reset').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); CAM.yaw = e ? e.ry + 0.35 : photoScene() ? CAM.yaw : P.ry; CAM.pitch = photoScene() ? 0.04 : 0.12; photo.zoom = 1; photo.dist = 0; CAM.dragAt = clock; });
 $('#shot-close').addEventListener('click', () => { $('#shot').hidden = true; });
+$('#chip-sky').addEventListener('click', () => toast('🌠 매시 정각엔 별똥별 비가 6분, 🌌 30분엔 오로라가 10분 동안 떠요. 밤 하늘(설정 → 시간 → 밤)에서 보여요.', themeName === 'night' ? [] : [{ label: '밤하늘로 보기', fn: () => applyTheme('night') }], 6000));
+{ const m = /[?&]sky=(aurora|meteor)/.exec(location.search); if (m) { skyForce(m[1]); if (themeName !== 'night') applyTheme('night'); } }
 $('#shot-mode').addEventListener('click', e => { const b = e.target.closest('[data-sm]'); if (b && !SHOT_LIVE.busy) { setShotMode(b.dataset.sm); sfx('pop'); } });
 $('#shot-again').addEventListener('click', () => { $('#shot').hidden = true; });
 $('#shot-save').addEventListener('click', saveShot);
@@ -6977,6 +7151,7 @@ function frame(now) {
   updateAmbient(dt, now);
   updateCamp(dt, now);
   sky.position.copy(camera.position); stars.position.copy(camera.position);
+  updateSky(dt, now);
   moon.position.copy(camera.position).addScaledVector(sunDir, 480);
   sun.target.position.copy(CAM.target); sun.position.copy(CAM.target).addScaledVector(sunDir, 120);
   updateLabels();
