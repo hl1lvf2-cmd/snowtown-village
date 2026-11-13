@@ -505,6 +505,26 @@ body.fishing #tbtns { display: none; }
 .post-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--muted); }
 .post-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 24px 0; }
 .chip.post { background: rgba(255, 107, 143, 0.32); border-color: rgba(255, 170, 190, 0.6); color: #fff; animation: skyglow 2.4s ease-in-out infinite; }
+#roombar { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--brand-b, 84px) + 8px); z-index: 14; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 14px; border-radius: 14px; white-space: nowrap; }
+#roombar b { font-size: 15px; margin-right: 4px; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
+body.room-edit #roombar { display: none; }
+#roomedit { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 15; width: min(600px, calc(100vw - 16px)); padding: 10px; border-radius: 16px; display: grid; gap: 8px; }
+.re-top { font-size: 13px; color: var(--muted); }
+.re-cat { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.re-cat::-webkit-scrollbar { display: none; }
+.re-cat .pc { width: 42px; height: 42px; font-size: 22px; }
+.re-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.re-sp { flex: 1; }
+body.room-edit #touch, body.room-edit #chat { display: none; }
+.modal-card.rp-card { width: min(440px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 16px; display: grid; gap: 10px; border-radius: 20px; }
+.rp-card h2 { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin: 0; }
+#rp-list { display: grid; gap: 8px; }
+.rp-item { display: grid; gap: 2px; text-align: left; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); }
+.rp-item:hover { background: rgba(156, 203, 240, 0.14); }
+.rp-item b { font-size: 15px; }
+.rp-item span { font-size: 12px; color: var(--muted); }
+.rp-item.mine { border-color: rgba(242, 193, 78, 0.7); }
+.rp-empty { font-size: 13px; color: var(--muted); text-align: center; margin: 6px 0; }
 .lbl-note { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
 .prop-rows { display: grid; gap: 6px; }
 .prop-row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -846,6 +866,12 @@ body.touch .keys.desk { display: none; }
       <div id="prompt" class="glass"></div>
     </div>
 
+    <div id="roombar" class="glass" hidden><b id="rb-title">🏠 내 방</b><button class="btn sm" type="button" id="rb-edit">✏️ 꾸미기</button><button class="btn sm" type="button" id="rb-leave">나가기</button></div>
+    <div id="roomedit" class="glass" hidden>
+      <div class="re-top"><span id="re-info"></span></div>
+      <div id="re-cat" class="re-cat" role="group" aria-label="놓을 가구"></div>
+      <div class="re-btns"><button class="btn sm" type="button" id="re-rot">↻ 돌리기</button><button class="btn sm" type="button" id="re-del">🗑 치우기</button><button class="btn sm" type="button" id="re-wall">벽지</button><button class="btn sm" type="button" id="re-floor">바닥</button><span class="re-sp"></span><button class="btn sm" type="button" id="re-cancel">취소</button><button class="btn primary sm" type="button" id="re-done">저장</button></div>
+    </div>
     <div id="sledrun" class="glass" hidden aria-live="polite"><span class="sr-lbl">🛷 기록 경주</span><b id="sr-time">0.00</b><span id="sr-info"></span></div>
     <div id="fishui" class="glass" hidden>
       <div class="fi-head"><b id="fi-title">🎣 입질을 기다려요…</b><button class="btn sm" type="button" id="fi-stop">일어나기</button></div>
@@ -1064,6 +1090,13 @@ body.touch .keys.desk { display: none; }
   </div>
   <div id="bprint" hidden><div class="bprint-box"><div class="bslot"></div><div id="bprint-img"></div><p id="bprint-msg"></p></div></div>
   <div id="fade" aria-hidden="true"></div>
+  <div id="roompick" class="modal" hidden>
+    <div class="modal-card glass rp-card" role="dialog" aria-modal="true" aria-labelledby="rp-title">
+      <div class="sheet-head" style="padding:0"><h2 id="rp-title">🏠 어느 방으로 갈까요?</h2><button class="x" id="rp-close" type="button" aria-label="닫기">×</button></div>
+      <div id="rp-list"></div>
+    </div>
+  </div>
+
   <div id="post" class="modal" hidden>
     <div class="modal-card glass post-card" role="dialog" aria-modal="true" aria-labelledby="post-title">
       <div class="sheet-head" style="padding:0"><h2 id="post-title">📮 눈사람 우체국</h2><button class="x" id="post-close" type="button" aria-label="우체국 닫기">×</button></div>
@@ -1312,6 +1345,12 @@ const STUDIO_CABIN = 1;
 const STUDIO = { x: 0, z: -600, W: 14, D: 14, H: 5.0 };
 const inStudio = (x, z) => Math.abs(x - STUDIO.x) < STUDIO.W / 2 + 8 && Math.abs(z - STUDIO.z) < STUDIO.D / 2 + 8;
 const STUDIO_DOOR = (() => { const c = CABINS[STUDIO_CABIN], sn = Math.sin(c.rot), cs = Math.cos(c.rot); return { x: c.x + sn * 4.2, z: c.z + cs * 4.2, ax: c.x + sn * 3.5, az: c.z + cs * 3.5, ry: c.rot }; })();
+// 내 방: CABINS[0](서쪽 오두막) 문 → 마을 밖 먼 곳(ROOM)의 방. 사람마다 따로라 '누구 방(rm)'으로 구분
+const ROOM_CABIN = 0;
+const ROOM = { x: 600, z: 0, W: 11, D: 10, H: 3.8 };
+const inRoom = (x, z) => Math.abs(x - ROOM.x) < ROOM.W / 2 + 6 && Math.abs(z - ROOM.z) < ROOM.D / 2 + 6;
+const offMap = (x, z) => inStudio(x, z) || inRoom(x, z);
+const ROOM_DOOR = (() => { const c = CABINS[ROOM_CABIN], sn = Math.sin(c.rot), cs = Math.cos(c.rot); return { x: c.x + sn * 4.2, z: c.z + cs * 4.2, ry: c.rot }; })();
 const STUDIO_IN = { lz: 4.4, x: STUDIO.x - STUDIO.W / 2 + 2.6, z: STUDIO.z + 2.2, dx: STUDIO.x - STUDIO.W / 2 + 0.6, dz: STUDIO.z + 4.4 };
 const STUDIO_BGS = {
   cream: { nm: '화이트', top: '#f2ece2', mid: '#f8f4ec', bot: '#fdfbf6' },
@@ -1431,7 +1470,7 @@ const EMOTES = { wave: { emoji: '👋', dur: 2.4 }, dance: { emoji: '💃', dur:
    지형
    ================================================================ */
 function heightAt(x, z) {
-  if (inStudio(x, z)) return 0;
+  if (inStudio(x, z) || inRoom(x, z)) return 0;
   const d = Math.hypot(x, z);
   let h = 1.8 * Math.sin(x * 0.033 + 1.3) * Math.cos(z * 0.029 - 0.7) + 0.9 * Math.sin(x * 0.071 + z * 0.053 + 2.1) + 0.45 * Math.cos(z * 0.12 - x * 0.05);
   h = (h + 1.2) * smooth(15, 34, d);
@@ -1630,7 +1669,7 @@ function updateMeteors(dt) {
 }
 const skyEase = (t, start, end) => clamp(Math.min((t - start) / 25000, (end - t) / 25000), 0, 1);
 function updateSky(dt, now) {
-  const t = Date.now(), st = skyNow(t), cur = st.cur, show = themeName === 'night' && !indoor;
+  const t = Date.now(), st = skyNow(t), cur = st.cur, show = themeName === 'night' && !indoor && !ROOMST.owner;
   const aT = cur && cur.ev.k === 'aurora' ? skyEase(t, cur.start, cur.end) : 0, mT = cur && cur.ev.k === 'meteor' ? skyEase(t, cur.start, cur.end) : 0;
   SKY.aA += (aT - SKY.aA) * Math.min(1, dt * 1.5); SKY.mA = mT;
   AURORA_U.t.value += dt; AURORA_U.a.value = SKY.aA;
@@ -2669,7 +2708,7 @@ function setFoot(i, f) {
 }
 function addFoot(x, z, ry, side) {
   const px = x + Math.cos(ry) * 0.13 * side, pz = z - Math.sin(ry) * 0.13 * side;
-  if (inPond(px, pz, -0.3) || Math.hypot(px, pz) < 14.6 || inStudio(px, pz)) return;
+  if (inPond(px, pz, -0.3) || Math.hypot(px, pz) < 14.6 || offMap(px, pz)) return;
   const F = FOOT, i = F.idx; F.idx = (i + 1) % F.n;
   const j = i * 5; F.d[j] = px; F.d[j + 1] = heightAt(px, pz) + 0.025; F.d[j + 2] = pz; F.d[j + 3] = ry; F.d[j + 4] = clock || 0.001;
   setFoot(i, 1); F.m.instanceMatrix.needsUpdate = true;
@@ -3258,7 +3297,7 @@ function bakeStatic(list) {
 function mergeChildren(grp) {
   const kids = grp.children.filter(o => o.isMesh);
   kids.forEach(o => o.updateMatrix());
-  for (const r of mergeByMat(kids, o => o.matrix)) { r.src.forEach(o => grp.remove(o)); grp.add(r.mesh); }
+  for (const r of mergeByMat(kids, o => o.matrix)) { r.src.forEach(o => grp.remove(o)); r.mesh.userData.ownGeo = true; grp.add(r.mesh); }
 }
 /* ================================================================
    썰매 기록 경주: 언덕을 315도 휘감아 내려가는 나선 코스. 출발 문 → 깃발 문 여섯 → 도착 문.
@@ -3684,7 +3723,7 @@ function updatePets(dt) {
   if (m && entered) {
     const close = !!(BOOTH || P.fish || P.sit != null), s = petSpot(P.pos.x, P.pos.z, P.ry, close), sp = Math.hypot(P.vel.x, P.vel.z);
     stepPet(m, s.x, s.z, P.ry, dt, Math.max(PET_KINDS[m.kind].speed, sp * 1.2 + 1));
-    m.g.visible = mode !== 'photo' || !!(photo && photo.withMe) || !inStudio(P.pos.x, P.pos.z);
+    m.g.visible = mode !== 'photo' || !!(photo && photo.withMe) || !offMap(P.pos.x, P.pos.z);
   }
 }
 function petContext() {
@@ -3868,6 +3907,323 @@ function postCheck() {
   updatePostChip();
   if (!$('#post').hidden && postTab === 'inbox') renderPost();
 }
+/* ================================================================
+   내 방: 서쪽 오두막 문으로 들어가면 마을 밖 먼 곳(ROOM)의 방으로 옮겨 가요.
+   방은 사람마다 따로라서 같은 자리에 지어 두고, '누구 방에 있는지(rm)'로 서로 보일지를 정해요.
+   가구 배치는 내 문서(snowmen/내아이디)의 rm 칸에 저장해서 친구가 놀러 오면 그대로 보여요
+   ================================================================ */
+// 가구: 크기는 0.5m 칸 수(w 가로 × d 세로), solid면 부딪힘. 앞은 +z
+const FURN = {
+  bed: { nm: '침대', ic: '🛏️', w: 4, d: 6, solid: true },
+  sofa: { nm: '소파', ic: '🛋️', w: 6, d: 2, solid: true },
+  table: { nm: '동그란 탁자', ic: '🍵', w: 3, d: 3, solid: true },
+  chair: { nm: '의자', ic: '🪑', w: 1, d: 1, solid: true },
+  rug: { nm: '러그', ic: '🧶', w: 5, d: 4, solid: false },
+  xtree: { nm: '트리', ic: '🎄', w: 2, d: 2, solid: true },
+  lamp: { nm: '스탠드', ic: '💡', w: 1, d: 1, solid: true },
+  shelf: { nm: '책장', ic: '📚', w: 4, d: 1, solid: true },
+  plant: { nm: '화분', ic: '🪴', w: 1, d: 1, solid: true },
+  fire: { nm: '벽난로', ic: '🔥', w: 4, d: 1, solid: true },
+  gifts: { nm: '선물 상자', ic: '🎁', w: 2, d: 2, solid: true },
+  plush: { nm: '눈사람 인형', ic: '⛄', w: 1, d: 1, solid: true },
+};
+const WALLS = [['#f6efe3', '#efe3cf', '크림'], ['#d7efe4', '#c4e4d4', '민트'], ['#f7d9e3', '#efc6d3', '벚꽃'], ['#273064', '#1d2550', '밤하늘'], ['#c99a6b', '#b8875a', '나무']];
+const FLOORS = [['#c08a5c', '#a87448', '참나무'], ['#6e4a33', '#5c3d29', '호두나무'], ['#e9e4dc', '#cfc7bb', '타일']];
+const ROOM_MAX = 30;
+const RGW = ROOM.W * 2, RGD = ROOM.D * 2;   // 0.5m 칸 수
+const DEFAULT_ROOM = { w: 0, f: 0, it: [['bed', 4, 5, 0], ['rug', 11, 10, 0], ['table', 11, 10, 0], ['chair', 9, 10, 1], ['lamp', 2, 1, 0], ['plant', 19, 1, 0], ['shelf', 15, 1, 0], ['xtree', 18, 16, 0]], t: 0 };
+function cleanRoom(r) {
+  if (!r || typeof r !== 'object' || !Array.isArray(r.it)) return null;
+  const it = r.it.slice(0, ROOM_MAX).filter(a => Array.isArray(a) && hasKey(FURN, a[0]) && isNum(a[1]) && isNum(a[2])).map(a => [a[0], clamp(Math.round(a[1]), 0, RGW), clamp(Math.round(a[2]), 0, RGD), ((Math.round(a[3]) % 4) + 4) % 4 || 0]);
+  return { w: clamp(Math.round(r.w) || 0, 0, WALLS.length - 1), f: clamp(Math.round(r.f) || 0, 0, FLOORS.length - 1), it, t: isNum(r.t) ? r.t : 0 };
+}
+let myRoom = cleanRoom(LS.get('room', null)) || cleanRoom(DEFAULT_ROOM);
+const ROOMST = { owner: null, edit: false, sel: -1, sig: '', layout: null };
+const ROOM_OBBS = [];
+// 칸 좌표(가구 가운데, 0.5m 단위) → 월드
+const cellX = gx => ROOM.x - ROOM.W / 2 + gx * 0.5, cellZ = gz => ROOM.z - ROOM.D / 2 + gz * 0.5;
+const furnDims = (k, r) => { const F = FURN[k]; return r % 2 ? [F.d, F.w] : [F.w, F.d]; };
+function stripeTex(c0, c1, kind) {
+  const c = makeCanvas(256, 256), g = c.getContext('2d');
+  g.fillStyle = c0; g.fillRect(0, 0, 256, 256);
+  g.fillStyle = c1;
+  if (kind === 'floor') { for (let y = 0; y < 256; y += 32) { g.fillRect(0, y, 256, 2); const o = (y / 32) % 2 ? 0 : 128; g.fillRect(o, y, 2, 32); } }
+  else if (kind === 'tile') { for (let y = 0; y < 256; y += 64) for (let x = 0; x < 256; x += 64) if ((x + y) / 64 % 2) g.fillRect(x, y, 64, 64); }
+  else if (kind === 'stars') { const rng = mulberry32(9); for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(255,248,220,${0.4 + rng() * 0.5})`; g.beginPath(); g.arc(rng() * 256, rng() * 256, 1 + rng() * 2, 0, TAU); g.fill(); } }
+  else { for (let x = 0; x < 256; x += 32) g.fillRect(x, 0, 12, 256); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+const roomG = new THREE.Group(), furnG = new THREE.Group(), selMark = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffd36e', transparent: true, opacity: 0.45, depthWrite: false }));
+let roomWallM = null, roomFloorM = null;
+const ROOM_WALLG = [], ROOM_CEIL = { g: null };
+// 인형의 집처럼: 카메라 쪽 벽과 천장은 숨겨서 방 안이 잘 보이게
+function roomCutaway() {
+  const cx = camera.position.x - ROOM.x, cz = camera.position.z - ROOM.z;
+  for (const w of ROOM_WALLG) w.g.visible = cx * w.nx + cz * w.nz < w.d - 0.15;
+  ROOM_CEIL.g.visible = camera.position.y < ROOM.H - 0.1;
+}
+const ROOM_WALL_T = [], ROOM_FLOOR_T = [];
+{
+  roomG.position.set(ROOM.x, 0, ROOM.z); roomG.visible = false; scene.add(roomG); roomG.add(furnG);
+  selMark.visible = false; selMark.position.y = 0.03; selMark.userData.noCurve = true; roomG.add(selMark);
+  WALLS.forEach(([a, b], i) => { const t = stripeTex(a, b, i === 3 ? 'stars' : 'wall'); t.repeat.set(4, 1.4); ROOM_WALL_T.push(t); });
+  FLOORS.forEach(([a, b], i) => { const t = stripeTex(a, b, i === 2 ? 'tile' : 'floor'); t.repeat.set(3, 3); ROOM_FLOOR_T.push(t); });
+  roomWallM = toonMat({ map: ROOM_WALL_T[0] }); roomFloorM = toonMat({ map: ROOM_FLOOR_T[0] });
+  const W = ROOM.W, D = ROOM.D, H = ROOM.H, add = (geo, m, x, y, z, sx, sy, sz, par = roomG) => { const o = mesh(geo, m, x, y, z, sx, sy, sz); o.receiveShadow = true; par.add(o); return o; };
+  add(GEO.box, roomFloorM, 0, -0.05, 0, W, 0.1, D);
+  // 둘레 바닥: 벽 밖이 허공으로 안 보이게 넓은 눈밭
+  const around = new THREE.Mesh(new THREE.CircleGeometry(60, 48).rotateX(-Math.PI / 2), toonMat({ color: '#e8eef8', map: snowTex })); around.position.y = -0.12; around.receiveShadow = true; roomG.add(around);
+  ROOM_CEIL.g = new THREE.Group(); roomG.add(ROOM_CEIL.g);
+  add(GEO.box, mat('#fbf6ee'), 0, H + 0.05, 0, W, 0.1, D, ROOM_CEIL.g);
+  for (const [x, z, w, d, nx, nz] of [[0, -D / 2, W, 0.2, 0, -1], [0, D / 2, W, 0.2, 0, 1], [-W / 2, 0, 0.2, D, -1, 0], [W / 2, 0, 0.2, D, 1, 0]]) {
+    const wg = new THREE.Group(); roomG.add(wg); ROOM_WALLG.push({ g: wg, nx, nz, d: nx ? W / 2 : D / 2 });
+    add(GEO.box, roomWallM, x, H / 2, z, w, H, d, wg);
+    add(GEO.box, mat('#8a5a3b'), x, 0.08, z, w + 0.02, 0.16, d + 0.06, wg);
+    OBBS.push({ x: ROOM.x + x, z: ROOM.z + z, rot: 0, w, d, t: 'wall' });
+  }
+  const backW = ROOM_WALLG[0].g, frontW = ROOM_WALLG[1].g;
+  // 뒤 벽 창문: 눈 덮인 바깥
+  const wc = makeCanvas(512, 320), wg = wc.getContext('2d'), sky = wg.createLinearGradient(0, 0, 0, 320);
+  sky.addColorStop(0, '#9cc8ef'); sky.addColorStop(1, '#e8f2fb'); wg.fillStyle = sky; wg.fillRect(0, 0, 512, 320);
+  wg.fillStyle = '#ffffff'; wg.beginPath(); wg.moveTo(0, 240); wg.quadraticCurveTo(160, 190, 300, 230); wg.quadraticCurveTo(420, 260, 512, 215); wg.lineTo(512, 320); wg.lineTo(0, 320); wg.fill();
+  const rng = mulberry32(31);
+  for (let i = 0; i < 9; i++) { const x = rng() * 512, y = 225 + rng() * 25, s = 26 + rng() * 22; wg.fillStyle = '#2f7a52'; wg.beginPath(); wg.moveTo(x, y - s * 1.6); wg.lineTo(x - s * 0.55, y); wg.lineTo(x + s * 0.55, y); wg.fill(); wg.fillStyle = '#fff'; wg.beginPath(); wg.moveTo(x, y - s * 1.6); wg.lineTo(x - s * 0.22, y - s * 1.0); wg.lineTo(x + s * 0.22, y - s * 1.0); wg.fill(); }
+  for (let i = 0; i < 70; i++) { wg.fillStyle = 'rgba(255,255,255,0.9)'; wg.beginPath(); wg.arc(rng() * 512, rng() * 300, 1.5 + rng() * 2.5, 0, TAU); wg.fill(); }
+  const wt = new THREE.CanvasTexture(wc); wt.colorSpace = THREE.SRGBColorSpace;
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.6), new THREE.MeshBasicMaterial({ map: wt })); win.position.set(0, 2.0, -D / 2 + 0.11); backW.add(win);
+  add(GEO.box, mat('#f4f1ec'), 0, 2.0, -D / 2 + 0.12, 2.8, 0.1, 0.06, backW); add(GEO.box, mat('#f4f1ec'), 0, 2.0, -D / 2 + 0.12, 0.08, 1.8, 0.06, backW);
+  for (const s of [-1, 1]) add(GEO.box, mat('#f4f1ec'), s * 1.36, 2.0, -D / 2 + 0.12, 0.1, 1.8, 0.06, backW);
+  add(GEO.box, mat('#f4f1ec'), 0, 1.15, -D / 2 + 0.16, 3.0, 0.08, 0.2, backW);
+  // 앞 벽 문
+  add(GEO.box, mat('#8a5a3b'), 0, 1.1, D / 2 - 0.1, 1.2, 2.2, 0.08, frontW); add(GEO.sphereLo, MAT.gold, 0.42, 1.05, D / 2 - 0.16, 0.05, 0.05, 0.05, frontW);
+  add(GEO.box, mat('#8a3b3b'), 0, 0.012, D / 2 - 0.8, 1.4, 0.012, 0.9);
+  // 천장 등
+  const bulbM = toonMat({ color: '#fff4dc', emissive: '#ffd98a', emissiveIntensity: 2 });
+  add(GEO.sphere, bulbM, 0, H - 0.35, 0, 0.22, 0.22, 0.22, ROOM_CEIL.g); add(GEO.cyl, mat('#d0a050'), 0, H - 0.12, 0, 0.03, 0.25, 0.03, ROOM_CEIL.g);
+}
+const ROOM_LIGHT = { hs: '#ffe9d2', hg: '#7a5a44', hi: 1.25, sun: '#ffe2bd', si: 1.2, dir: [-0.3, 0.85, 0.4], exp: 1.0, pl: '#ffc58a', pi: 11, rim: '#ffe8cf', rimS: 0.2, bloom: [0.4, 0.5, 0.86] };
+function applyRoomLight() {
+  const L = ROOM_LIGHT;
+  hemi.color.set(L.hs); hemi.groundColor.set(L.hg); hemi.intensity = L.hi;
+  sun.color.set(L.sun); sun.intensity = L.si; sunDir.set(...L.dir).normalize();
+  renderer.toneMappingExposure = L.exp; stars.visible = false;
+  for (const b of studioPL) { b.l.color.set(L.pl); b.l.intensity = L.pi; }
+  CURVE.rimColor.value.set(L.rim); CURVE.rimStrength.value = L.rimS;
+  if (PP) { PP.bloom.strength = L.bloom[0]; PP.bloom.radius = L.bloom[1]; PP.bloom.threshold = L.bloom[2]; }
+}
+function makeFurn(k) {
+  const g = new THREE.Group(), add = (geo, m, x, y, z, sx, sy, sz) => { const o = mesh(geo, m, x, y, z, sx, sy, sz); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+  const wood = MAT.wood, dark = MAT.woodDark;
+  if (k === 'bed') {
+    add(GEO.box, dark, 0, 0.22, 0, 1.9, 0.3, 2.85); add(GEO.box, dark, 0, 0.6, -1.4, 1.95, 1.1, 0.12);
+    add(GEO.box, mat('#ffffff'), 0, 0.45, 0.05, 1.8, 0.2, 2.65); add(GEO.box, mat('#6c8fe0'), 0, 0.57, 0.45, 1.84, 0.08, 1.75);
+    add(GEO.box, mat('#ffffff'), 0, 0.58, 0.45, 1.86, 0.05, 0.12).position.z = -0.42;
+    add(GEO.sphere, mat('#fff6ea'), -0.42, 0.62, -1.0, 0.36, 0.1, 0.22); add(GEO.sphere, mat('#fff6ea'), 0.42, 0.62, -1.0, 0.36, 0.1, 0.22);
+  } else if (k === 'sofa') {
+    const f = mat('#e07a5f');
+    add(GEO.box, f, 0, 0.25, 0.05, 2.8, 0.4, 0.85); add(GEO.box, f, 0, 0.65, -0.33, 2.8, 0.6, 0.22);
+    for (const s of [-1, 1]) add(GEO.box, f, s * 1.32, 0.42, 0.05, 0.22, 0.45, 0.85);
+    for (const s of [-1, 1]) add(GEO.box, mat('#f2a48c'), s * 0.62, 0.5, 0.08, 1.2, 0.12, 0.7);
+    add(GEO.box, mat('#ffd36e'), -0.9, 0.7, -0.15, 0.35, 0.32, 0.12).rotation.z = 0.2;
+  } else if (k === 'table') {
+    add(GEO.cyl, wood, 0, 0.72, 0, 0.68, 0.06, 0.68); add(GEO.cyl, dark, 0, 0.36, 0, 0.08, 0.72, 0.08); add(GEO.cyl, dark, 0, 0.03, 0, 0.35, 0.06, 0.35);
+    add(GEO.cyl, mat('#ffffff'), 0.15, 0.8, 0.1, 0.07, 0.1, 0.07); add(GEO.cylTaper, mat('#e0283c'), -0.2, 0.8, -0.1, 0.08, 0.12, 0.08);
+  } else if (k === 'chair') {
+    add(GEO.box, wood, 0, 0.45, 0, 0.46, 0.06, 0.46); add(GEO.box, wood, 0, 0.75, -0.21, 0.46, 0.55, 0.05);
+    for (const [x, z] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) add(GEO.box, dark, x, 0.22, z, 0.05, 0.44, 0.05);
+  } else if (k === 'rug') {
+    add(GEO.cyl, mat('#c9b6ff'), 0, 0.01, 0, 1.25, 0.015, 0.95); add(GEO.cyl, mat('#f6b6c8'), 0, 0.018, 0, 0.95, 0.015, 0.7); add(GEO.cyl, mat('#fff3e0'), 0, 0.025, 0, 0.55, 0.015, 0.38);
+  } else if (k === 'xtree') {
+    add(GEO.cyl, dark, 0, 0.15, 0, 0.08, 0.3, 0.08); add(GEO.cyl, mat('#e0283c'), 0, 0.12, 0, 0.3, 0.24, 0.3);
+    for (const [y, r] of [[0.65, 0.55], [1.05, 0.42], [1.4, 0.3]]) add(GEO.cone, MAT.pine, 0, y, 0, r, 0.65, r);
+    add(GEO.octa, MAT.gold, 0, 1.78, 0, 0.11, 0.11, 0.04);
+    const lt = toonMat({ color: '#fff3c4', emissive: '#ffd36e', emissiveIntensity: 2 }); for (let i = 0; i < 10; i++) { const a = i * 2.4, y = 0.45 + i * 0.1, r = 0.5 - i * 0.04; add(GEO.sphereLo, lt, Math.cos(a) * r, y, Math.sin(a) * r, 0.035); }
+  } else if (k === 'lamp') {
+    add(GEO.cyl, dark, 0, 0.03, 0, 0.18, 0.06, 0.18); add(GEO.cyl, dark, 0, 0.75, 0, 0.025, 1.45, 0.025);
+    add(GEO.cylTaper, mat('#fff3d6', { emissive: '#ffcf7a', emissiveIntensity: 0.9 }), 0, 1.5, 0, 0.22, 0.3, 0.22);
+  } else if (k === 'shelf') {
+    add(GEO.box, dark, 0, 0.9, -0.05, 1.8, 1.8, 0.38);
+    const cols = ['#e0283c', '#3a6fd8', '#2f9a62', '#f2b630', '#9b5de5', '#ff7aa8'];
+    for (let r = 0; r < 3; r++) { add(GEO.box, wood, 0, 0.35 + r * 0.55, 0.0, 1.66, 0.04, 0.32); for (let i = 0; i < 7; i++) add(GEO.box, mat(cols[(i + r * 2) % 6]), -0.7 + i * 0.21 + (r % 2) * 0.05, 0.53 + r * 0.55, 0.02, 0.12, 0.32 - (i % 3) * 0.04, 0.24); }
+  } else if (k === 'plant') {
+    add(GEO.cylTaper, mat('#c86b4a'), 0, 0.2, 0, 0.2, 0.4, 0.2);
+    for (let i = 0; i < 5; i++) { const a = i * 1.26; add(GEO.sphere, MAT.pine, Math.cos(a) * 0.14, 0.62 + (i % 2) * 0.12, Math.sin(a) * 0.14, 0.17, 0.24, 0.17); }
+  } else if (k === 'fire') {
+    add(GEO.box, MAT.brick, 0, 0.6, -0.05, 1.7, 1.2, 0.42); add(GEO.box, mat('#f4f1ec'), 0, 1.24, 0, 1.9, 0.1, 0.52);
+    add(GEO.box, mat('#1b1d22'), 0, 0.42, 0.1, 0.9, 0.62, 0.3);
+    const fl = toonMat({ color: '#ffb347', emissive: '#ff7a1f', emissiveIntensity: 2.2 }); add(GEO.cone, fl, -0.12, 0.38, 0.14, 0.14, 0.4, 0.1); add(GEO.cone, fl, 0.12, 0.33, 0.14, 0.11, 0.3, 0.1);
+    for (const s of [-1, 1]) add(GEO.sphereLo, mat('#e0283c'), s * 0.65, 1.36, 0.05, 0.08);
+  } else if (k === 'gifts') {
+    for (const [x, z, s, c, r] of [[-0.18, -0.1, 0.42, '#e0283c', '#ffd36e'], [0.24, 0.1, 0.34, '#2f9a62', '#ffffff'], [-0.05, 0.25, 0.26, '#3a6fd8', '#ff7aa8']]) {
+      add(GEO.box, mat(c), x, s / 2, z, s, s, s); add(GEO.box, mat(r), x, s / 2, z, s + 0.01, s + 0.01, 0.06); add(GEO.box, mat(r), x, s / 2, z, 0.06, s + 0.01, s + 0.01);
+      add(GEO.sphereLo, mat(r), x, s + 0.04, z, 0.07, 0.05, 0.07);
+    }
+  } else if (k === 'plush') {
+    add(GEO.ball[0], MAT.snow, 0, 0.2, 0, 0.21); add(GEO.ball[1], MAT.snow, 0, 0.5, 0, 0.15);
+    for (const s of [-1, 1]) add(GEO.sphereLo, MAT.coal, s * 0.05, 0.54, 0.13, 0.02);
+    const n = add(GEO.cone, MAT.carrot, 0, 0.51, 0.18, 0.025, 0.1, 0.025); n.rotation.x = Math.PI / 2;
+    const sc = add(GEO.torus, mat('#e0283c'), 0, 0.38, 0, 0.13, 0.13, 0.35); sc.rotation.x = Math.PI / 2;
+  }
+  mergeChildren(g);
+  return g;
+}
+// 방 짓기: 벽지·바닥·가구, 부딪힘 상자
+function buildRoom(layout) {
+  const sig = JSON.stringify([layout.w, layout.f, layout.it]);
+  if (sig === ROOMST.sig) return; ROOMST.sig = sig;
+  roomWallM.map = ROOM_WALL_T[layout.w] || ROOM_WALL_T[0]; roomFloorM.map = ROOM_FLOOR_T[layout.f] || ROOM_FLOOR_T[0]; roomWallM.needsUpdate = roomFloorM.needsUpdate = true;
+  furnG.traverse(o => { if (o.isMesh && o.userData.ownGeo) o.geometry.dispose(); }); furnG.clear(); ROOM_OBBS.length = 0;
+  layout.it.forEach((a, i) => {
+    const [k, gx, gz, r] = a, F = FURN[k]; if (!F) return;
+    const g = makeFurn(k); g.position.set(cellX(gx) - ROOM.x, 0, cellZ(gz) - ROOM.z); g.rotation.y = -r * Math.PI / 2; g.userData.ri = i; furnG.add(g);
+    if (F.solid) { const [w, d] = furnDims(k, r); ROOM_OBBS.push({ x: cellX(gx), z: cellZ(gz), rot: 0, w: w * 0.5 - 0.08, d: d * 0.5 - 0.08, t: 'furn' }); }
+  });
+  stylizeScene();
+  roomSel(ROOMST.edit ? ROOMST.sel : -1);
+}
+function roomLayoutOf(owner) {
+  if (owner === NET.uid || owner === 'me') return myRoom;
+  const d = rawSnow.find(x => x.uid === owner);
+  return (d && d.rm) || cleanRoom({ w: 0, f: 0, it: [], t: 0 });
+}
+function roomOwnerName(owner) {
+  if (owner === NET.uid || owner === 'me') return nick || '나';
+  const d = rawSnow.find(x => x.uid === owner); if (d) return clean(d.nk) || uidNick(owner) || '친구';
+  for (const pe of peers.values()) if (pe.uid === owner) return pe.nick;
+  return '친구';
+}
+const roomIsMine = () => !!ROOMST.owner && (ROOMST.owner === NET.uid || ROOMST.owner === 'me');
+function setRoomIn(owner) {
+  const on = !!owner; ROOMST.owner = owner || null;
+  roomG.visible = on; snowfall.pts.visible = !on && !indoor;
+  document.body.classList.toggle('in-room', on);
+  if (on) {
+    buildRoom(roomLayoutOf(owner));
+    studioPL.forEach((b, i) => { roomG.add(b.l); b.l.position.set(i ? 2.6 : -2.6, ROOM.H - 0.4, i ? 1.2 : -1.2); });
+    applyRoomLight();
+    $('#roombar').hidden = false; $('#rb-title').textContent = roomIsMine() ? '🏠 내 방' : `🏠 ${roomOwnerName(owner)}님의 방`; $('#rb-edit').hidden = !roomIsMine();
+  } else {
+    studioPL.forEach(b => { if (b.parent) { b.parent.add(b.l); b.l.position.copy(b.pos); } });
+    if (ROOMST.edit) roomEditEnd(false);
+    $('#roombar').hidden = true; applyTheme(themeName);
+  }
+}
+function enterRoom(owner) {
+  if (mode !== 'play') return;
+  if (rolling) dropRolling(); if (P.sled) stopSled(); if (P.fish) stopFishing();
+  P.sit = null; closeRoomPick(); sfx('bell');
+  fadeMove(() => {
+    P.pos.set(ROOM.x, 0, ROOM.z + ROOM.D / 2 - 2.2); P.vel.set(0, 0, 0); P.vy = 0; P.grounded = true; P.ry = Math.PI;
+    CAM.yaw = 0; CAM.pitch = 0.75; CAM.dist = 9.5; CAM.snap = true;
+    ROOMST.sig = ''; setRoomIn(owner);
+    if (roomIsMine() && !LS.get('roomTold', false)) { LS.set('roomTold', true); toast('내 방이에요! 위쪽 꾸미기 버튼으로 가구를 놓고, 친구들이 놀러 올 수 있어요.', [], 6500); }
+    else if (!roomIsMine()) toast(`${roomOwnerName(owner)}님의 방에 놀러 왔어요.`);
+  });
+}
+function leaveRoom() {
+  if (!ROOMST.owner) return;
+  sfx('bell');
+  fadeMove(() => {
+    const d = ROOM_DOOR; P.pos.set(d.x, groundY(d.x, d.z), d.z); P.vel.set(0, 0, 0); P.vy = 0; P.grounded = true; P.ry = d.ry;
+    CAM.yaw = d.ry + Math.PI; CAM.pitch = 0.36; CAM.dist = 8; CAM.snap = true;
+    setRoomIn(null);
+  });
+}
+const nearRoomExit = () => Math.hypot(P.pos.x - ROOM.x, P.pos.z - (ROOM.z + ROOM.D / 2 - 0.6)) < 1.3;
+function roomContext() {
+  if (nearRoomExit()) return { kind: 'roomLeave', key: 'E', text: '🚪 방에서 나가기' };
+  return { kind: 'none', text: roomIsMine() ? '🏠 내 방' : `🏠 ${roomOwnerName(ROOMST.owner)}님의 방`, dim: roomIsMine() ? '위쪽 꾸미기로 가구를 놓아요' : '구경하는 중' };
+}
+function roomDoorContext() {
+  if (Math.hypot(P.pos.x - ROOM_DOOR.x, P.pos.z - ROOM_DOOR.z) > 2.2) return null;
+  return { kind: 'roomDoor', key: 'E', text: '🏠 내 방', dim: '내 방 꾸미기 · 친구 방 놀러 가기' };
+}
+// 들어갈 방 고르기: 내 방 + 가구를 놓은 친구 방(접속 중·놀러 온 사람 수)
+function openRoomPick() {
+  const list = $('#rp-list'); list.innerHTML = '';
+  const row = (title, sub, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'rp-item' + (cls ? ' ' + cls : ''); const t = document.createElement('b'); t.textContent = title; const s = document.createElement('span'); s.textContent = sub; b.append(t, s); b.addEventListener('click', fn); list.append(b); };
+  row('🏠 내 방', `가구 ${myRoom.it.length}개 · 꾸미고 친구를 초대해요`, () => enterRoom(NET.uid || 'me'), 'mine');
+  const here = new Map(); for (const pe of peers.values()) if (pe.rm) here.set(pe.rm, (here.get(pe.rm) || 0) + 1);
+  const online = new Set([...peers.values()].map(p => p.uid));
+  const rooms = rawSnow.filter(d => d.uid !== NET.uid && d.rm && d.rm.it.length && !isBanned(d.uid)).map(d => ({ uid: d.uid, nk: clean(d.nk) || uidNick(d.uid) || '친구', n: d.rm.it.length, h: here.get(d.uid) || 0, on: online.has(d.uid) }))
+    .sort((a, b) => b.h - a.h || b.on - a.on || b.n - a.n).slice(0, 30);
+  for (const r of rooms) row(`${r.nk}님의 방`, `가구 ${r.n}개${r.h ? ` · ${r.h}명 놀러 와 있어요` : ''}${r.on ? ' · 접속 중' : ''}`, () => enterRoom(r.uid));
+  if (!rooms.length) { const p = document.createElement('p'); p.className = 'rp-empty'; p.textContent = '아직 꾸민 친구 방이 없어요. 내 방을 먼저 꾸며 볼까요?'; list.append(p); }
+  $('#roompick').hidden = false; sfx('pop');
+}
+function closeRoomPick() { $('#roompick').hidden = true; }
+/* ---------- 꾸미기 ---------- */
+function roomEditStart() {
+  if (!roomIsMine()) return;
+  ROOMST.edit = true; ROOMST.sel = -1; ROOMST.layout = JSON.parse(JSON.stringify(myRoom));
+  $('#roomedit').hidden = false; document.body.classList.add('room-edit'); renderRoomEdit();
+  CAM.pitch = 1.0; CAM.dist = 13; CAM.yaw = 0;
+  toast('가구를 누르면 고를 수 있어요. 바닥을 누르면 그 자리로 옮겨요.', [], 4000);
+}
+function roomEditEnd(save) {
+  if (!ROOMST.edit) return;
+  ROOMST.edit = false; $('#roomedit').hidden = true; document.body.classList.remove('room-edit'); roomSel(-1);
+  if (save) {
+    const changed = JSON.stringify(ROOMST.layout.it) !== JSON.stringify(myRoom.it) || ROOMST.layout.w !== myRoom.w || ROOMST.layout.f !== myRoom.f;
+    myRoom = { ...ROOMST.layout, t: Date.now() }; LS.set('room', myRoom);
+    if (NET.mode === 'online' && NET.canSave) saveMine();
+    if (changed) { mission('room'); toast('방을 저장했어요. 친구들이 놀러 오면 이대로 보여요.'); }
+  } else { ROOMST.sig = ''; buildRoom(myRoom); }
+  ROOMST.layout = null; CAM.pitch = 0.75; CAM.dist = 9.5;
+}
+function renderRoomEdit() {
+  const box = $('#re-cat');
+  if (!box.children.length) for (const [k, F] of Object.entries(FURN)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pc'; b.dataset.fk = k; b.textContent = F.ic; b.title = F.nm; b.setAttribute('aria-label', `${F.nm}놓기`); box.append(b); }
+  const L = ROOMST.layout, sel = ROOMST.sel >= 0 ? L.it[ROOMST.sel] : null;
+  $('#re-info').textContent = sel ? `${FURN[sel[0]].ic} ${FURN[sel[0]].nm} · 바닥을 누르면 옮겨요` : `가구 ${L.it.length} / ${ROOM_MAX} · 아래에서 골라 놓아요`;
+  $('#re-rot').disabled = $('#re-del').disabled = !sel;
+  $('#re-wall').textContent = `벽지 · ${WALLS[L.w][2]}`; $('#re-floor').textContent = `바닥 · ${FLOORS[L.f][2]}`;
+}
+// 겹침·벽 검사(러그는 아무 데나)
+function furnFits(L, idx, k, gx, gz, r) {
+  const [w, d] = furnDims(k, r);
+  if (gx - w / 2 < 0.4 || gx + w / 2 > RGW - 0.4 || gz - d / 2 < 0.4 || gz + d / 2 > RGD - 0.4) return false;
+  if (gz + d / 2 > RGD - 2.6 && Math.abs(gx - RGW / 2) < 2 + w / 2) return false;   // 문 앞은 비워 둠
+  if (!FURN[k].solid) return true;
+  return !L.it.some((a, i) => { if (i === idx || !FURN[a[0]].solid) return false; const [w2, d2] = furnDims(a[0], a[3]); return Math.abs(a[1] - gx) * 2 < w + w2 && Math.abs(a[2] - gz) * 2 < d + d2; });
+}
+function snapCell(k, r, x, z) { const [w, d] = furnDims(k, r); const off = n => (n % 2 ? 0.5 : 0); return [Math.round((x - (ROOM.x - ROOM.W / 2)) / 0.5 - off(w)) + off(w), Math.round((z - (ROOM.z - ROOM.D / 2)) / 0.5 - off(d)) + off(d)]; }
+function roomSel(i) {
+  ROOMST.sel = i;
+  const L = ROOMST.layout || myRoom, a = i >= 0 ? L.it[i] : null;
+  selMark.visible = !!a;
+  if (a) { const [w, d] = furnDims(a[0], a[3]); selMark.scale.set(w * 0.5 + 0.2, 1, d * 0.5 + 0.2); selMark.position.set(cellX(a[1]) - ROOM.x, 0.03, cellZ(a[2]) - ROOM.z); }
+}
+function roomApply() { ROOMST.sig = ''; buildRoom(ROOMST.layout); renderRoomEdit(); }
+function roomAdd(k) {
+  const L = ROOMST.layout; if (L.it.length >= ROOM_MAX) { toast(`가구는 ${ROOM_MAX}개까지 놓을 수 있어요.`); return; }
+  // 방 가운데부터 빈 칸을 찾아 놓음
+  for (let rr = 0; rr < 22; rr++) for (let t = 0; t < 16; t++) {
+    const a = t / 16 * TAU, [gx, gz] = snapCell(k, 0, ROOM.x + Math.cos(a) * rr * 0.25, ROOM.z + Math.sin(a) * rr * 0.25);
+    if (furnFits(L, -1, k, gx, gz, 0)) { L.it.push([k, gx, gz, 0]); ROOMST.sel = L.it.length - 1; roomApply(); sfx('pop'); return; }
+  }
+  toast('놓을 자리가 없어요. 다른 가구를 치우거나 옮겨 보세요.');
+}
+function roomTap(e) {
+  const L = ROOMST.layout;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObjects(furnG.children, true)[0];
+  if (hit) { let o = hit.object; while (o && o.userData.ri == null) o = o.parent; if (o && o.userData.ri !== ROOMST.sel) { roomSel(o.userData.ri); renderRoomEdit(); sfx('pop'); return; } }
+  if (ROOMST.sel < 0) return;
+  const pl = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(pl, pt)) return;
+  const a = L.it[ROOMST.sel], [gx, gz] = snapCell(a[0], a[3], pt.x, pt.z);
+  if (furnFits(L, ROOMST.sel, a[0], gx, gz, a[3])) { a[1] = gx; a[2] = gz; roomApply(); sfx('pop'); }
+  else toast('거기엔 안 들어가요. 벽이나 다른 가구, 문 앞을 피해 주세요.', [], 2200);
+}
+function roomRotate() {
+  const L = ROOMST.layout, a = L.it[ROOMST.sel]; if (!a) return;
+  const r = (a[3] + 1) % 4;
+  if (furnFits(L, ROOMST.sel, a[0], a[1], a[2], r)) { a[3] = r; roomApply(); sfx('pop'); return; }
+  const [gx, gz] = snapCell(a[0], r, cellX(a[1]), cellZ(a[2]));
+  if (furnFits(L, ROOMST.sel, a[0], gx, gz, r)) { a[1] = gx; a[2] = gz; a[3] = r; roomApply(); sfx('pop'); } else toast('돌릴 자리가 없어요. 조금 옮긴 뒤 돌려 보세요.', [], 2200);
+}
+function roomDelete() { const L = ROOMST.layout; if (ROOMST.sel < 0) return; L.it.splice(ROOMST.sel, 1); ROOMST.sel = -1; roomApply(); sfx('bump'); }
 const RING_GEO = new THREE.TorusGeometry(0.62, 0.06, 6, 28);
 function setTeamRing(av, tm) {
   const u = av.userData;
@@ -4602,7 +4958,7 @@ let myWrite = null, myWritePending = false;
 function saveMine() {
   if (!NET.db || !NET.uid) return Promise.resolve(false);
   if (myWrite) { myWritePending = true; return myWrite; }
-  myWrite = NET.db.doc('snowmen/' + NET.uid).set({ nk: nick, c: colorIdx, items: myItems.slice(-MAX_ITEMS), w: ARN.wins, rec: myRec, pc: myCards, t: Date.now() })
+  myWrite = NET.db.doc('snowmen/' + NET.uid).set({ nk: nick, c: colorIdx, items: myItems.slice(-MAX_ITEMS), w: ARN.wins, rec: myRec, pc: myCards, rm: myRoom, t: Date.now() })
     .then(() => true, err => {
       if (err && err.code === 'invalid_argument') { NET.canSave = false; updateChips(); toast('이 페이지에 저장할 권한이 없어서, 눈사람은 접속해 있는 동안만 보여요.'); }
       else if (err && err.code === 'quota_exceeded') toast('마을 저장 공간이 가득 찼어요. 오래된 눈사람을 허물어 주세요.');
@@ -4658,7 +5014,7 @@ function subscribeDb() {
   const docsOf = snap => snap.docs.filter(x => x.exists).map(x => ({ id: x.id, d: x.data() || {} }));
   db.collection('snowmen').onSnapshot(snap => {
     if (!snap.metadata.fromCache) { clearTimeout(timer); NET.dbLoaded = true; NET.note = ''; loaded.snow = true; }
-    rawSnow = docsOf(snap).map(({ id, d }) => ({ uid: id, nk: str(d.nk, 12), c: clamp(Math.round(isNum(d.c) ? d.c : 0), 0, 7), w: isNum(d.w) ? clamp(Math.round(d.w), 0, 9999) : 0, rec: cleanRec(d.rec), pc: cleanCards(d.pc), items: Array.isArray(d.items) ? d.items.slice(0, MAX_ITEMS).map(cleanItem).filter(Boolean) : [] }));
+    rawSnow = docsOf(snap).map(({ id, d }) => ({ uid: id, nk: str(d.nk, 12), c: clamp(Math.round(isNum(d.c) ? d.c : 0), 0, 7), w: isNum(d.w) ? clamp(Math.round(d.w), 0, 9999) : 0, rec: cleanRec(d.rec), pc: cleanCards(d.pc), rm: cleanRoom(d.rm), items: Array.isArray(d.items) ? d.items.slice(0, MAX_ITEMS).map(cleanItem).filter(Boolean) : [] }));
     ingestSnow(); updateChips(); maybeNews();
   }, () => { clearTimeout(timer); NET.note = '눈사람 목록을 불러오지 못했어요'; updateChips(); });
   if (NET.isOwner) db.collection('reports').onSnapshot(snap => {
@@ -4725,6 +5081,8 @@ function ingestSnow() {
   if (!myWrite) { myItems = mine ? mine.items : []; if (mine) ARN.wins = Math.max(ARN.wins, mine.w); }
   if (mine && mine.pc && mine.pc.length && !myWrite) { const ids = new Set(myCards.map(c => c.id)); const add = mine.pc.filter(c => !ids.has(c.id)); if (add.length) { myCards = [...myCards, ...add].sort((a, b) => a.at - b.at).slice(-20); LS.set('cards', myCards); } }
   postCheck();
+  if (mine && mine.rm && mine.rm.t > (myRoom.t || 0) && !ROOMST.edit) { myRoom = mine.rm; LS.set('room', myRoom); }
+  if (ROOMST.owner && !ROOMST.edit) buildRoom(roomLayoutOf(ROOMST.owner));
   if (mine && mine.rec) { const mr = mergeRec(myRec, mine.rec); if (JSON.stringify(mr) !== JSON.stringify(myRec)) { myRec = mr; LS.set('rec', myRec); } }
   updateRecSigns();
   scheduleReconcile();
@@ -4847,6 +5205,7 @@ function upsertPeer(p) {
   }
   pe.tm = pr.tm === 'r' || pr.tm === 'b' ? pr.tm : null;
   pe.pt = hasKey(PET_KINDS, pr.pt) ? pr.pt : '';
+  pe.rm = typeof pr.rm === 'string' ? pr.rm.slice(0, 80) : '';
   pe.ae = typeof pr.ae === 'string' ? pr.ae.slice(0, 24) : '';
   pe.as = isNum(pr.as) ? clamp(Math.round(pr.as), 0, 999) : 0;
   const c = clamp(Math.round(isNum(pr.c) ? pr.c : 0), 0, COLORS.length - 1);
@@ -4858,7 +5217,7 @@ function upsertPeer(p) {
       if (old) { pe.avatar.position.copy(old.position); pe.avatar.rotation.y = old.rotation.y; scene.remove(old); }
     }
     setProps(pe.avatar, Array.isArray(pr.pp) ? { h: pr.pp[0], f: pr.pp[1] } : null);
-    const pin = inStudio(pr.p[0], pr.p[2]);
+    const pin = offMap(pr.p[0], pr.p[2]);
     pe.tpos.set(pin ? pr.p[0] : clamp(pr.p[0], -140, 140), clamp(pr.p[1], -5, 40), pin ? pr.p[2] : clamp(pr.p[2], -140, 140));
     pe.try = isNum(pr.ry) ? pr.ry : 0;
     if (!pe.entered || pe.pos.distanceTo(pe.tpos) > 10) { pe.pos.copy(pe.tpos); pe.ry = pe.try; }
@@ -4911,7 +5270,7 @@ function upsertPeer(p) {
     if (!entered || !isNum(v.x) || !isNum(v.z)) return;
     if (Math.hypot(pe.pos.x - P.pos.x, pe.pos.z - P.pos.z) > 14) return;
     if (clock - (pe.snToast || -99) > 15) { pe.snToast = clock; toast(`📸 ${pe.nick}님이 사진을 찍어요! 카메라를 봐요`, [], 3200); }
-    const sin = inStudio(v.x, v.z);
+    const sin = offMap(v.x, v.z);
     if (mode === 'play') P.lookAt = { x: sin ? v.x : clamp(v.x, -140, 140), z: sin ? v.z : clamp(v.z, -140, 140), until: clock + 4 };
   });
   ev('gv', v => { if (v.to === NET.myPeer && isNum(v.r)) receiveGive(pe, clamp(v.r, 0.15, MAX_R)); });
@@ -4978,7 +5337,9 @@ function updatePeers(dt) {
     if (pe.pose) { if (!pe.poseEm || pe.poseEm.k !== pe.pose) pe.poseEm = { k: pe.pose, t0: clock }; } else pe.poseEm = null;
     pe.throwT = Math.max(0, pe.throwT - dt);
     // 멀리 있는 친구는 그리지도 움직이지도 않음(사람이 많을 때 가볍게)
-    const far = (pe.pos.x - camera.position.x) ** 2 + (pe.pos.z - camera.position.z) ** 2 > 85 * 85;
+    const myRm = ROOMST.owner ? (ROOMST.owner === 'me' ? NET.uid : ROOMST.owner) : '';
+    pe.hideRm = (pe.rm || '') !== (myRm || '') && (!!pe.rm || !!myRm);
+    const far = pe.hideRm || (pe.pos.x - camera.position.x) ** 2 + (pe.pos.z - camera.position.z) ** 2 > 85 * 85;
     pe.avatar.visible = !far;
     if (!far) {
       // 좀 먼 친구(35m 너머)는 움직임 계산을 한 프레임 걸러 두 배 시간으로(사람이 많을 때 가볍게)
@@ -5006,7 +5367,7 @@ function updatePeers(dt) {
     if (pe.pet) { pe.pet.g.visible = !far; if (!far) { const sp = petSpot(pe.pos.x, pe.pos.z, pe.ry, pe.st === 'sit' || (pe.bt && pe.bt.ph === 'shoot')); stepPet(pe.pet, sp.x, sp.z, pe.ry, dt, Math.max(PET_KINDS[pe.pet.kind].speed, (pe.spd || 0) * 1.2 + 1)); } }
     setText(lb, 'emo', lb.emo, (pe.poseEm || pe.emote) ? EMOTES[(pe.poseEm || pe.emote).k].emoji : '');
     if (pe.bubbleUntil && clock > pe.bubbleUntil) { pe.bubbleUntil = 0; lb.bubble.textContent = ''; }
-    placeLabel(lb, pe.pos.x, pe.pos.y + 2.3 + pe.avatar.userData.rig.position.y, pe.pos.z, 70);
+    placeLabel(lb, pe.pos.x, pe.pos.y + 2.3 + pe.avatar.userData.rig.position.y, pe.pos.z, pe.hideRm ? 0 : 70);
     if (pe.wipLabel && pe.wip) {
       setText(pe.wipLabel, 'nm', pe.wipLabel.nmText, `${pe.nick}님이 만드는 중 · ${pe.wip.b.length}/3`);
       placeLabel(pe.wipLabel, pe.wip.x, groundY(pe.wip.x, pe.wip.z) + smTop(pe.wip.b) + 0.5, pe.wip.z, 40);
@@ -5028,6 +5389,7 @@ function ballPosFor(pos, ry, r, out) {
 function resolveCollisions(p, rad) {
   nearColliders(p.x, p.z, c => pushCircle(p, rad, c.x, c.z, c.r));
   for (const o of OBBS) pushOBB(p, rad, o);
+  if (ROOMST.owner && inRoom(p.x, p.z)) for (const o of ROOM_OBBS) pushOBB(p, rad, o);
   for (const e of SM.values()) if (Math.abs(p.x - e.x) < 8 && Math.abs(p.z - e.z) < 8) pushCircle(p, rad, e.x, e.z, e.baseR * 0.92);
   if (wip) pushCircle(p, rad, wip.x, wip.z, wip.b[0] * 0.92);
   for (const l of loose) pushCircle(p, rad, l.x, l.z, l.r * 0.9);
@@ -5061,7 +5423,7 @@ function updateSled(dt, ix, iz) {
   P.pos.x = ox; P.pos.z = oz;
   resolveCollisions(P.pos, 0.55);
   if (Math.hypot(P.pos.x - ox, P.pos.z - oz) > 0.01 && Math.abs(P.sledV) > 3) { P.sledV *= 0.3; sfx('bump'); }
-  const d = Math.hypot(P.pos.x, P.pos.z); if (d > WORLD_R && !inStudio(P.pos.x, P.pos.z)) { P.pos.x *= WORLD_R / d; P.pos.z *= WORLD_R / d; P.sledV *= 0.3; }
+  const d = Math.hypot(P.pos.x, P.pos.z); if (d > WORLD_R && !offMap(P.pos.x, P.pos.z)) { P.pos.x *= WORLD_R / d; P.pos.z *= WORLD_R / d; P.sledV *= 0.3; }
   P.pos.y = groundY(P.pos.x, P.pos.z); P.grounded = true;
   P.vel.set(fx * P.sledV, 0, fz * P.sledV);
   P.anim = pushing ? 'sledpush' : iz > 0.3 ? 'sledrow' : 'sled';
@@ -5106,7 +5468,7 @@ function updatePlayer(dt) {
     resolveCollisions(ballCheck, rolling.r * 0.92);
     P.pos.x += ballCheck.x - ballBefore.x; P.pos.z += ballCheck.z - ballBefore.z;
   }
-  const d = Math.hypot(P.pos.x, P.pos.z); if (d > WORLD_R && !inStudio(P.pos.x, P.pos.z)) { P.pos.x *= WORLD_R / d; P.pos.z *= WORLD_R / d; }
+  const d = Math.hypot(P.pos.x, P.pos.z); if (d > WORLD_R && !offMap(P.pos.x, P.pos.z)) { P.pos.x *= WORLD_R / d; P.pos.z *= WORLD_R / d; }
   const gy = groundY(P.pos.x, P.pos.z);
   if (P.grounded) P.pos.y = gy;
   else { P.vy -= 22 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= gy) { P.pos.y = gy; P.grounded = true; P.vy = 0; } }
@@ -5325,6 +5687,7 @@ const volM3 = v => (v * UNIT * UNIT * UNIT).toFixed(2);
 function actionContext() {
   if (P.sled) return { kind: 'sledOff', key: 'E', text: '썰매에서 내리기', dim: RUN.on ? '기록 경주 중 · 깃발 사이로!' : 'W 밀기 · S 멈추기 · A/D 방향' };
   if (P.fish) return fishingContext();
+  if (ROOMST.owner) return roomContext();
   if (indoor) {
     if (nearStudioDoorIn()) return { kind: 'leave', key: 'E', text: '사진관 나가기' };
     const kb = nearKiosk();
@@ -5385,6 +5748,7 @@ function actionContext() {
   if (P.sit != null) return P.food ? eatContext() : { kind: 'stand', key: 'E', text: '일어나기', dim: '움직여도 일어나요' };
   const pc = petContext(); if (pc) return pc;
   const po = postContext(); if (po) return po;
+  const rd = roomDoorContext(); if (rd) return rd;
   const cc = campContext(); if (cc) return cc;
   const fc = fishContext(); if (fc) return fc;
   if (P.food) return eatContext();
@@ -5419,6 +5783,8 @@ function doPrimary() {
     case 'fishHook': case 'fishWait': fishPress(); break;
     case 'fishReel': break;
     case 'post': openPost(); break;
+    case 'roomDoor': openRoomPick(); break;
+    case 'roomLeave': leaveRoom(); break;
     case 'petAdopt': setMyPet(ctx.k); break;
     case 'petBye': { const K = PET_KINDS[PETS.mine.kind]; setMyPet(''); toast(`${K.ic} ${K.nm}${K.eun} 집으로 돌아갔어요. 또 놀러 와요!`); break; }
     case 'stack': startBalance('stack', wip, null); break;
@@ -6140,7 +6506,7 @@ const camDir = new THREE.Vector3();
 function throwBall() {
   if (mode !== 'play' || P.sled || P.fish || clock < ARN.stunUntil) return;
   if (rolling) { toast('눈덩이를 굴리는 중엔 던질 수 없어요. E로 내려놓아요.'); return; }
-  if (indoor) { toast('사진관 안에선 눈뭉치를 던질 수 없어요.'); return; }
+  if (indoor || ROOMST.owner) { toast(indoor ? '사진관 안에선 눈뭉치를 던질 수 없어요.' : '방 안에선 눈뭉치를 던질 수 없어요.'); return; }
   if (P.food) { toast(`${FOODS[P.food.k].nm}${FOODS[P.food.k].o} 들고 있어서 못 던져요. 먼저 ${FOODS[P.food.k].do}!`); return; }
   const now = performance.now(); if (now - P.lastThrow < 380) return;
   P.lastThrow = now; P.throwT = 0.3;
@@ -6600,7 +6966,7 @@ const MISSIONS = {
   note: ['방명록 남기기', 1], photo: ['사진 찍기', 1], giant: ['공동 눈사람에 보태기', 1], sled: ['썰매 타기', 1],
   throw: ['눈뭉치 던지기', 5], give: ['친구 받침에 눈덩이 올려 주기', 1], refill: ['눈사람에 눈 보충하기', 1], skate: ['연못에서 스케이트 타기', 1],
   snack: ['포차 간식 다 먹기', 1], fire: ['모닥불 가 통나무에 앉기', 1], cut4: ['사진관에서 네컷 찍기', 1],
-  fish: ['얼음낚시로 물고기 낚기', 1], sledrun: ['썰매 기록 경주 완주하기', 1], pet: ['동물 친구에게 재주 시키기', 1], post: ['친구에게 엽서 보내기', 1],
+  fish: ['얼음낚시로 물고기 낚기', 1], sledrun: ['썰매 기록 경주 완주하기', 1], pet: ['동물 친구에게 재주 시키기', 1], post: ['친구에게 엽서 보내기', 1], room: ['내 방 꾸미기', 1],
 };
 const ONLINE_ONLY = new Set(['like', 'note', 'giant', 'give', 'refill', 'post']);
 const REWARDS = [
@@ -6778,7 +7144,7 @@ function publishPresence(now) {
     bl: rolling ? r3(rolling.r) : 0,
     wip: wip ? { x: wip.x, z: wip.z, ry: r2(wip.ry), b: wip.b, d: wip.d, nm: wip.nm || '' } : null,
     lz: loose.map(l => [l.x, l.z, l.r]),
-    ch: myChat, em: myEmote, th: recentThrows.slice(), gv: myGive, ht: myHit, ann: myAnn, pg: myPing, sn: mySnap, rc: myRc, pt: PETS.mine ? PETS.mine.kind : '', ptk: myPtk,
+    ch: myChat, em: myEmote, th: recentThrows.slice(), gv: myGive, ht: myHit, ann: myAnn, pg: myPing, sn: mySnap, rc: myRc, pt: PETS.mine ? PETS.mine.kind : '', ptk: myPtk, rm: ROOMST.owner ? (ROOMST.owner === 'me' ? NET.uid : ROOMST.owner) || '' : '',
     ps: mode === 'photo' && photo && photo.withMe && photo.pose ? photo.pose : BOOTH && BOOTH.pose ? BOOTH.pose : '',
     sc: myScore, tm: ARN.team, as: ARN.score, ae: ARN.ep, sp: stamps,
     fd: P.food ? P.food.k : '', et: clock < P.eatUntil ? 1 : 0,
@@ -6825,6 +7191,10 @@ function updateCamera(dt) {
     const f = snapFrameFor(dt); dist = photo.dist; pitch = CAM.pitch;
     if (!f.people && clock - CAM.dragAt > 2.5 && !reducedMotion) CAM.yaw += dt * 0.12; // 눈사람만 찍을 땐 천천히 돎
   } else camGoal.set(P.pos.x, P.pos.y + 1.5 + (rolling ? rolling.r * 0.3 : 0), P.pos.z);
+  if (ROOMST.owner && mode === 'play') {
+    if (ROOMST.edit) { camGoal.set(ROOM.x, 0.4, ROOM.z + 0.4); CAM.pitch = clamp(CAM.pitch, 0.7, 1.35); pitch = CAM.pitch; dist = clamp(dist, 10, 15); }
+    else { CAM.pitch = clamp(CAM.pitch, 0.45, 1.1); pitch = CAM.pitch; dist = clamp(dist, 7, 12); }
+  }
   if (indoor && (mode === 'play' || mode === 'photo')) {
     // 사진관: 배경 쪽을 보는 방향 안에서만 돌고, 천장 아래에 머물게
     const lim = mode === 'photo' ? 0.6 : 0.85; CAM.yaw = clamp(Math.atan2(Math.sin(CAM.yaw), Math.cos(CAM.yaw)), -lim, lim);
@@ -6842,6 +7212,7 @@ function updateCamera(dt) {
     camera.position.z = clamp(camera.position.z, STUDIO.z - hz, STUDIO.z + hz);
     camera.position.y = clamp(camera.position.y, 0.5, STUDIO.H - 0.45);
   }
+  if (ROOMST.owner) roomCutaway();
   camera.lookAt(CAM.target);
   if (mode === 'photo' && photo) { const fov = photoScene() ? clamp(PHOTO_FOV * photo.zoom, 20, 80) : PHOTO_FOV; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); } }
   if (mode === 'decorate') { const r = decoView(); camera.setViewOffset(innerWidth, innerHeight, Math.round(innerWidth / 2 - (r.x + r.w / 2)), Math.round(innerHeight / 2 - (r.y + r.h / 2)), innerWidth, innerHeight); }
@@ -7247,6 +7618,7 @@ view.addEventListener('pointerup', endDrag); view.addEventListener('pointercance
 view.addEventListener('wheel', e => { e.preventDefault(); if (mode === 'photo' && photo) zoomPhoto(1 + e.deltaY * 0.0012); else CAM.dist = clamp(CAM.dist * (1 + e.deltaY * 0.0012), 3.5, 24); }, { passive: false });
 view.addEventListener('contextmenu', e => e.preventDefault());
 function pick(e) {
+  if (ROOMST.edit) { roomTap(e); return; }
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   raycaster.setFromCamera(ndc, camera);
   const hits = raycaster.intersectObjects([...SM.values()].map(x => x.group), true);
@@ -7303,6 +7675,8 @@ function closeTop() {
   if (!$('#snack').hidden) { closeSnack(); return; }
   if (!$('#shot').hidden) { $('#shot').hidden = true; return; }
   if (!$('#post').hidden) { closePost(); return; }
+  if (!$('#roompick').hidden) { closeRoomPick(); return; }
+  if (ROOMST.edit) { roomEditEnd(false); return; }
   if (!$('#settings').hidden) { closeSettings(); return; }
   if (!$('#admin').hidden) { $('#admin').hidden = true; return; }
   if (!$('#help').hidden) { $('#help').hidden = true; return; }
@@ -7538,6 +7912,17 @@ $('#snap-reset').addEventListener('click', () => { if (!photo) return; const e =
 $('#shot-close').addEventListener('click', () => { $('#shot').hidden = true; });
 $('#emo-pet').addEventListener('click', petTrick);
 $('#post-close').addEventListener('click', closePost);
+$('#rp-close').addEventListener('click', closeRoomPick);
+$('#roompick').addEventListener('click', e => { if (e.target.id === 'roompick') closeRoomPick(); });
+$('#rb-leave').addEventListener('click', leaveRoom);
+$('#rb-edit').addEventListener('click', roomEditStart);
+$('#re-cat').addEventListener('click', e => { const b = e.target.closest('[data-fk]'); if (b) roomAdd(b.dataset.fk); });
+$('#re-rot').addEventListener('click', roomRotate);
+$('#re-del').addEventListener('click', roomDelete);
+$('#re-wall').addEventListener('click', () => { ROOMST.layout.w = (ROOMST.layout.w + 1) % WALLS.length; roomApply(); });
+$('#re-floor').addEventListener('click', () => { ROOMST.layout.f = (ROOMST.layout.f + 1) % FLOORS.length; roomApply(); });
+$('#re-cancel').addEventListener('click', () => roomEditEnd(false));
+$('#re-done').addEventListener('click', () => roomEditEnd(true));
 $('#post').addEventListener('click', e => { if (e.target.id === 'post') closePost(); });
 for (const b of $$('#post [data-pt]')) b.addEventListener('click', () => { postTab = b.dataset.pt; postReply = ''; renderPost(); });
 $('#post-designs').addEventListener('click', e => { const b = e.target.closest('[data-cd]'); if (b) { $('#post-designs').dataset.v = b.dataset.cd; syncPostWrite(); sfx('pop'); } });
@@ -7827,7 +8212,7 @@ function updateHud(now) {
     html = `${keyHtml}${esc(ctx.text)}`;
     if (ctx.dim && !(touchUi && ctx.dim.startsWith('F '))) html += `<span class="dim">${esc(ctx.dim)}</span>`;
     if (ctx.view && !rolling) html += `<span class="dim">${touchUi ? '' : 'C '}「${esc(ctx.view.item.nm)}」 보기</span>`;
-    actLabel = { stack: '올리기', give: '올려주기', base: '받침 세우기', drop: '내려놓기', pick: '집기', decorate: '꾸미기', roll: '굴리기', giant: '보태기', sledOn: '썰매 타기', sledOff: '내리기', enter: '들어가기', leave: '나가기', booth: '촬영하기', boothJoin: '같이 찍기', mirror: '거울 · 소품', fish: '낚시하기', fishWait: '당기기', fishHook: '당기기!', fishReel: '감기', petAdopt: '친구 하기', petBye: '데려다주기', post: '우체국', snack: '간식 받기', sit: '앉기', stand: '일어나기', eat: P.food ? FOODS[P.food.k].verb : '먹기', arenaJoin: '참가하기', none: '—', blocked: '못 보태요', toobig: '안 올라가요', full: '가득 찼어요', rebase: '새로 세우기' }[ctx.kind] || '굴리기';
+    actLabel = { stack: '올리기', give: '올려주기', base: '받침 세우기', drop: '내려놓기', pick: '집기', decorate: '꾸미기', roll: '굴리기', giant: '보태기', sledOn: '썰매 타기', sledOff: '내리기', enter: '들어가기', leave: '나가기', booth: '촬영하기', boothJoin: '같이 찍기', mirror: '거울 · 소품', fish: '낚시하기', fishWait: '당기기', fishHook: '당기기!', fishReel: '감기', petAdopt: '친구 하기', petBye: '데려다주기', post: '우체국', roomDoor: '내 방', roomLeave: '나가기', snack: '간식 받기', sit: '앉기', stand: '일어나기', eat: P.food ? FOODS[P.food.k].verb : '먹기', arenaJoin: '참가하기', none: '—', blocked: '못 보태요', toobig: '안 올라가요', full: '가득 찼어요', rebase: '새로 세우기' }[ctx.kind] || '굴리기';
     promptWarn = !!ctx.warn;
     const tv = $('#t-view'); const s = nearestSnowman(4); tv.hidden = !s;
   }
@@ -7959,7 +8344,7 @@ const nearMirror = () => Math.hypot(P.pos.x - (STUDIO.x - STUDIO.W / 2 + 0.9), P
 const nearStudioDoorOut = () => Math.hypot(P.pos.x - STUDIO_DOOR.ax, P.pos.z - STUDIO_DOOR.az) < 1.6;
 const nearStudioDoorIn = () => Math.hypot(P.pos.x - STUDIO_IN.dx, P.pos.z - STUDIO_IN.dz) < 1.4;
 // 지도에선 사진관 안에 있는 사람을 오두막 문 앞에 보여 줌
-const mapXZ = (x, z) => (inStudio(x, z) ? [STUDIO_DOOR.x, STUDIO_DOOR.z] : [x, z]);
+const mapXZ = (x, z) => (inStudio(x, z) ? [STUDIO_DOOR.x, STUDIO_DOOR.z] : inRoom(x, z) ? [ROOM_DOOR.x, ROOM_DOOR.z] : [x, z]);
 function studioBgTex(k) {
   if (STUDIO_BG_TEX.has(k)) return STUDIO_BG_TEX.get(k);
   const B = STUDIO_BGS[k], c = makeCanvas(512, 512), g = c.getContext('2d');
@@ -8749,6 +9134,7 @@ function printBoothStrip(canvas, names, lay, by, live) {
 const SIGNS = [
   { lb: makeLabel('sign'), text: '썰매 언덕 · E로 타기', x: SLED_RACK.x, y: heightAt(SLED_RACK.x, SLED_RACK.z) + 2.3, z: SLED_RACK.z, d: 90, rec: 'sl' },
   ...Object.entries(PET_KINDS).map(([k, K]) => ({ lb: makeLabel('sign'), text: `${K.ic} ${K.nm} · 다가가서 E`, x: K.home.x, y: groundY(K.home.x, K.home.z) + 1.15, z: K.home.z, d: 22, near: 1.6, pet: k })),
+  { lb: makeLabel('sign'), text: '🏠 내 방 · 친구 방 놀러 가기', x: ROOM_DOOR.x, y: heightAt(ROOM_DOOR.x, ROOM_DOOR.z) + 3.2, z: ROOM_DOOR.z, d: 70, near: 2.6 },
   { lb: makeLabel('sign'), text: '📮 눈사람 우체국 · 엽서 보내기', x: POST.x, y: heightAt(POST.x, POST.z) + 2.0, z: POST.z, d: 70, near: 2.2 },
   { lb: makeLabel('sign'), text: '🎣 얼음낚시', x: POND.x + Math.cos(2.4) * 12.6, y: groundY(POND.x + Math.cos(2.4) * 12.6, POND.z + Math.sin(2.4) * 12.6) + 2.2, z: POND.z + Math.sin(2.4) * 12.6, d: 80, rec: 'fb' },
   { lb: makeLabel('sign'), text: '팀 눈싸움장', x: 0, y: ARENA.y + 2.6, z: ARENA.z + ARENA.d / 2 + 0.6, d: 90 },
