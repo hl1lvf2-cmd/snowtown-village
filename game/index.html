@@ -165,6 +165,22 @@ body.touch .tb { padding: 0 11px; }
 /* 좁은 화면: 버튼을 조금 작게 해서 제목을 덜 가리게 */
 @media (max-width: 380px) { #brand .logo { font-size: 19px; } }
 @media (max-width: 520px) { #toolbar { gap: 5px; } .tb, body.touch .tb { height: 36px; padding: 0 8px; border-radius: 11px; } .tb svg { width: 17px; height: 17px; } }
+/* 휴대폰 위쪽 정리: 제목 칸은 메뉴 버튼 왼쪽까지만, 칩은 한 줄로 밀어서 보기, 작은 지도·대화·알림이 서로 겹치지 않게 */
+body.touch #brand { right: calc(12px + var(--tbw, 180px) + 8px + env(safe-area-inset-right)); padding: 8px 12px; gap: 6px; max-width: 460px; }
+body.touch #brand .logo { font-size: 19px; white-space: nowrap; }
+body.touch #brand .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); padding-right: 14px; }
+body.touch #brand .chips::-webkit-scrollbar { display: none; }
+@media (orientation: portrait) {
+  body.touch #minimap { top: calc(58px + env(safe-area-inset-top)); }
+  body.touch #chatlog { top: calc(var(--brand-b, 84px) + 8px); width: calc(100vw - 172px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  body.touch #toasts { top: var(--toast-top, calc(188px + env(safe-area-inset-top))); }
+  body.touch #news { top: calc(var(--brand-b, 84px) + 8px); }
+}
+@media (orientation: landscape) {
+  body.touch #chatlog { top: calc(var(--brand-b, 84px) + 8px); width: min(40vw, 360px); }
+  body.touch #toasts { left: auto; right: calc(140px + env(safe-area-inset-right)); transform: none; width: min(340px, 40vw); top: calc(var(--brand-b, 84px) + 6px); justify-items: end; }
+  body.touch #news { left: calc(12px + env(safe-area-inset-left)); transform: none; top: calc(var(--brand-b, 84px) + 8px); width: min(400px, 46vw); max-height: calc(100vh - var(--brand-b, 84px) - 84px); }
+}
 
 /* settings, arena, news, guestbook */
 #settings { position: absolute; top: calc(60px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: min(300px, calc(100vw - 24px)); padding: 12px; display: grid; gap: 10px; z-index: 18; }
@@ -445,6 +461,17 @@ body.touch #snack .sheet-head { padding-top: 8px; padding-bottom: 6px; }
 .sw-row { display: flex; gap: 7px; flex-wrap: wrap; }
 .sw-row .sw { width: 28px; height: 28px; }
 .look-actions { display: flex; gap: 10px; }
+.lbl-note { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
+.prop-rows { display: grid; gap: 6px; }
+.prop-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.pc { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.07); padding: 0; font-size: 18px; line-height: 1; display: grid; place-items: center; flex: none; }
+.pc:hover { background: rgba(156, 203, 240, 0.16); }
+.pc[aria-checked="true"] { background: var(--snow); border-color: var(--snow); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.pc-sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; flex: none; }
+#booth-props { display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; padding-bottom: 1px; }
+#booth-props::-webkit-scrollbar { display: none; }
+#booth-props .pc { width: 32px; height: 32px; font-size: 17px; }
+#booth-props .pc-lbl { font-size: 12px; color: var(--muted); flex: none; margin-right: 2px; }
 .look-actions .btn { flex: 1; }
 .entry-card.edit .eyebrow, .entry-card.edit .lead, .entry-card.edit .theme-line, .entry-card.edit #entry-status, .entry-card.edit .keys { display: none; }
 @media (max-width: 640px) {
@@ -948,6 +975,7 @@ body.touch .keys.desk { display: none; }
         <button class="pill" type="button" data-pose="dance">💃 춤</button>
         <button class="pill" type="button" data-pose="cheers">🥂 짠</button>
       </div>
+      <div id="booth-props" role="group" aria-label="소품"><span class="pc-lbl">🎀 소품</span></div>
       <div class="booth-go"><span id="booth-who"></span><button class="btn primary" type="button" id="booth-now">지금 찍기</button></div>
     </div>
   </div>
@@ -1010,6 +1038,11 @@ body.touch .keys.desk { display: none; }
           <div id="sw-knit" class="sw-row" role="radiogroup" aria-labelledby="knit-label"></div>
           <div class="lbl-sm" id="scarf-label">목도리</div>
           <div id="sw-scarf" class="sw-row" role="radiogroup" aria-labelledby="scarf-label"></div>
+          <div class="lbl-sm" id="prop-label">소품 <span class="lbl-note">머리 하나 · 얼굴 하나</span></div>
+          <div class="prop-rows" role="group" aria-labelledby="prop-label">
+            <div id="pr-head" class="prop-row" role="radiogroup" aria-label="머리 소품"></div>
+            <div id="pr-face" class="prop-row" role="radiogroup" aria-label="얼굴 소품"></div>
+          </div>
         </div>
       </div>
       <div class="look-actions">
@@ -2723,9 +2756,9 @@ function makeAvatar(ci, lk) {
   put(head, mesh(GEO.sphere, hair, 0, 0.04, -0.07, 0.465, 0.43, 0.42)).castShadow = true;
   for (const sx of [-1, 1]) put(head, mesh(GEO.sphere, hair, sx * 0.37, -0.1, 0.05, 0.11, 0.2, 0.14));
   put(head, mesh(GEO.sphere, hair, 0, 0.19, 0.25, 0.36, 0.12, 0.16));
-  put(head, mesh(GEO.hemi, knit, 0, 0.13, -0.02, 0.48, 0.45, 0.46)).castShadow = true;
-  put(head, mesh(GEO.torus, knit, 0, 0.14, -0.02, 0.47, 0.47, 0.55)).rotation.x = Math.PI / 2;
-  put(head, mesh(GEO.sphere, MAT.knit, 0, 0.62, -0.04, 0.12));
+  const capA = put(head, mesh(GEO.hemi, knit, 0, 0.13, -0.02, 0.48, 0.45, 0.46)); capA.castShadow = true; capA.name = 'ribbed_cap';
+  const capB = put(head, mesh(GEO.torus, knit, 0, 0.14, -0.02, 0.47, 0.47, 0.55)); capB.rotation.x = Math.PI / 2; capB.name = 'ribbed_cap';
+  put(head, mesh(GEO.sphere, MAT.knit, 0, 0.62, -0.04, 0.12)).name = 'wool_pompom';
   const eyes = [];
   for (const sx of [-1, 1]) {
     const eg = new THREE.Group(); eg.position.set(sx * 0.16, -0.05, 0.385); head.add(eg);
@@ -2796,6 +2829,164 @@ function addJoints(root) {
   root.updateMatrixWorld(true);
   for (const [list, bones] of binds) { const skel = new THREE.Skeleton(bones); for (const m of list) m.bind(skel); }
   return true;
+}
+/* ================================================================
+   소품: 머리(모자·머리띠) 하나, 얼굴(안경·코·수염) 하나.
+   머리 소품을 쓰면 털모자를 벗고, 좌표는 모두 머리 기준(앞이 +z, 정수리 ≈ 0.44)
+   ================================================================ */
+const PROP_H = {
+  none: { nm: '털모자', ic: '🧶' }, santa: { nm: '산타 모자', ic: '🎅' }, rudolph: { nm: '루돌프 뿔', ic: '🦌' }, flake: { nm: '눈꽃 머리띠', ic: '❄️' },
+  bunny: { nm: '토끼 머리띠', ic: '🐰' }, bear: { nm: '곰돌이 귀', ic: '🐻' }, crown: { nm: '왕관', ic: '👑' }, party: { nm: '고깔모자', ic: '🥳' },
+};
+const PROP_F = {
+  none: { nm: '없음', ic: '🙂' }, round: { nm: '동그란 안경', ic: '👓' }, heart: { nm: '하트 안경', ic: '💗' }, star: { nm: '별 안경', ic: '⭐' },
+  nose: { nm: '루돌프 코', ic: '🔴' }, stache: { nm: '콧수염', ic: '🥸' },
+};
+const hasKey = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+const cleanProps = v => ({ h: v && hasKey(PROP_H, v.h) ? v.h : 'none', f: v && hasKey(PROP_F, v.f) ? v.f : 'none' });
+const PGEO = {};
+const pgeo = (k, f) => PGEO[k] || (PGEO[k] = f());
+const starShape = (() => {
+  const s = new THREE.Shape();
+  for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.22 : 0.5; s[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); }
+  s.closePath(); return s;
+})();
+let partyTex = null;
+function partyMat() {
+  if (partyTex) return partyTex;
+  const c = makeCanvas(128, 128), g = c.getContext('2d');
+  g.fillStyle = '#ff6fa3'; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = '#7fd3ff'; for (let i = -2; i < 6; i++) { g.beginPath(); g.moveTo(i * 32, 128); g.lineTo(i * 32 + 14, 128); g.lineTo(i * 32 + 62, 0); g.lineTo(i * 32 + 48, 0); g.fill(); }
+  g.fillStyle = '#ffe14d'; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(i * 32 + (j % 2) * 16 + 8, j * 32 + 16, 6, 0, TAU); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1);
+  return (partyTex = toonMat({ map: t }));
+}
+function propBand(g, col) {
+  const t = mesh(pgeo('band', () => new THREE.TorusGeometry(0.48, 0.032, 6, 30, Math.PI - 0.5)), mat(col), 0, -0.02, 0.06);
+  t.rotation.z = 0.25; g.add(t); return t;
+}
+const bandAt = (th, dz = 0.04) => [Math.cos(th) * 0.48, -0.02 + Math.sin(th) * 0.48, 0.06 + dz];
+function flakeMesh(m) {
+  const f = new THREE.Group(), arm = pgeo('flA', () => new THREE.BoxGeometry(0.03, 0.2, 0.024).translate(0, 0.1, 0)), tw = pgeo('flT', () => new THREE.BoxGeometry(0.024, 0.07, 0.02).translate(0, 0.035, 0));
+  for (let i = 0; i < 6; i++) {
+    const a = new THREE.Group(); a.rotation.z = i * Math.PI / 3; f.add(a);
+    a.add(mesh(arm, m));
+    for (const s of [-1, 1]) { const t = mesh(tw, m, 0, 0.12, 0); t.rotation.z = s * 0.8; a.add(t); }
+  }
+  f.add(mesh(GEO.sphereLo, m, 0, 0, 0, 0.045));
+  return f;
+}
+const PROP_MAKE = {
+  santa(g) {
+    const red = mat('#d62839'), fur = mat('#ffffff');
+    const rim = mesh(pgeo('santaRim', () => new THREE.TorusGeometry(0.43, 0.08, 8, 30)), fur, 0, 0.2, -0.01, 1, 0.86, 1); rim.rotation.x = Math.PI / 2; g.add(rim);
+    g.add(mesh(pgeo('santaBody', () => new THREE.CylinderGeometry(0.2, 0.43, 0.36, 22)), red, 0, 0.38, -0.01, 1, 1, 0.86));
+    const tip = new THREE.Group(); tip.position.set(0, 0.55, -0.02); tip.rotation.set(-0.35, 0, 1.05); g.add(tip);
+    tip.add(mesh(GEO.sphere, red, 0, 0, 0, 0.2, 0.2, 0.18));
+    tip.add(mesh(pgeo('santaTip', () => new THREE.ConeGeometry(0.19, 0.44, 18).translate(0, 0.2, 0)), red));
+    tip.add(mesh(GEO.sphere, fur, 0, 0.43, 0, 0.09));
+  },
+  rudolph(g) {
+    propBand(g, '#7a4a2c');
+    const br = mat('#b0743f'), beam = pgeo('antB', () => new THREE.CapsuleGeometry(0.034, 0.3, 3, 8).translate(0, 0.17, 0)), tine = pgeo('antT', () => new THREE.CapsuleGeometry(0.028, 0.12, 3, 8).translate(0, 0.08, 0));
+    for (const s of [-1, 1]) {
+      const a = new THREE.Group(); a.position.set(...bandAt(Math.PI / 2 - s * 0.95, 0)); a.rotation.z = -s * 0.32; g.add(a);
+      a.add(mesh(beam, br));
+      const t1 = mesh(tine, br, 0, 0.13, 0); t1.rotation.z = -s * 0.95; a.add(t1);
+      const t2 = mesh(tine, br, 0, 0.24, 0); t2.rotation.z = s * 0.8; a.add(t2);
+    }
+    const [hx, hy, hz] = bandAt(Math.PI * 0.68), leaf = mat('#2f8a4e');
+    for (const s of [-1, 1]) { const l = mesh(GEO.sphereLo, leaf, hx + s * 0.055, hy + 0.01, hz, 0.075, 0.032, 0.03); l.rotation.z = s * 0.5; g.add(l); }
+    for (const [dx, dy] of [[-0.02, 0.02], [0.02, 0.025], [0, -0.01]]) g.add(mesh(GEO.sphereLo, MAT.berryRed, hx + dx, hy + dy, hz + 0.03, 0.03));
+  },
+  flake(g) {
+    propBand(g, '#8ccaf5');
+    const m = mat('#eef9ff', { emissive: '#7cc0ff', emissiveIntensity: 0.55 });
+    const f1 = flakeMesh(m); f1.position.set(...bandAt(Math.PI * 0.64, 0.05)); f1.rotation.z = 0.3; g.add(f1);
+    const f2 = flakeMesh(m); f2.position.set(...bandAt(Math.PI * 0.3, 0.05)); f2.scale.setScalar(0.6); f2.rotation.z = -0.2; g.add(f2);
+  },
+  bunny(g) {
+    propBand(g, '#ffc2d6');
+    const w = mat('#ffffff'), pk = mat('#ffb3c8');
+    for (const s of [-1, 1]) {
+      const e = new THREE.Group(); e.position.set(...bandAt(Math.PI / 2 - s * 0.32, 0)); e.rotation.z = -s * (s > 0 ? 0.42 : 0.16); g.add(e);
+      e.add(mesh(GEO.sphere, w, 0, 0.22, 0, 0.09, 0.25, 0.05));
+      e.add(mesh(GEO.sphere, pk, 0, 0.21, 0.03, 0.05, 0.18, 0.025));
+      if (s > 0) e.children.forEach(o => { o.rotation.x = -0.15; });
+    }
+  },
+  bear(g) {
+    propBand(g, '#6b4026');
+    const out = mat('#8a5a3b'), inn = mat('#e8b48c');
+    for (const s of [-1, 1]) {
+      const [x, y, z] = bandAt(Math.PI / 2 - s * 0.72, 0);
+      g.add(mesh(GEO.sphere, out, x * 1.04, y + 0.04, z, 0.13, 0.13, 0.07));
+      g.add(mesh(GEO.sphere, inn, x * 1.04, y + 0.035, z + 0.045, 0.075, 0.075, 0.03));
+    }
+  },
+  crown(g) {
+    const c = new THREE.Group(); c.position.set(0.02, 0.38, 0); c.rotation.set(0.05, 0, -0.12); g.add(c);
+    c.add(mesh(pgeo('crownBand', () => new THREE.CylinderGeometry(0.27, 0.26, 0.12, 26, 1, true)), MAT.gold, 0, 0.06, 0, 1, 1, 0.9));
+    for (let i = 0; i < 7; i++) {
+      const a = i / 7 * TAU, x = Math.sin(a) * 0.265, z = Math.cos(a) * 0.265 * 0.9;
+      c.add(mesh(GEO.cone, MAT.gold, x, 0.17, z, 0.05, 0.12, 0.05));
+      c.add(mesh(GEO.sphereLo, MAT.gold, x, 0.24, z, 0.026));
+    }
+    c.add(mesh(GEO.sphereLo, MAT.berryRed, 0, 0.06, 0.245, 0.04, 0.04, 0.02));
+    for (const s of [-1, 1]) c.add(mesh(GEO.sphereLo, mat('#3a7cf0', { emissive: '#0b2a6a', emissiveIntensity: 0.4 }), Math.sin(s * 1.1) * 0.27, 0.06, Math.cos(1.1) * 0.243, 0.03));
+  },
+  party(g) {
+    const p = new THREE.Group(); p.position.set(0.09, 0.37, 0.02); p.rotation.z = -0.25; g.add(p);
+    p.add(mesh(pgeo('partyCone', () => new THREE.ConeGeometry(0.21, 0.5, 22).translate(0, 0.25, 0)), partyMat()));
+    p.add(mesh(GEO.sphere, MAT.yellow, 0, 0.51, 0, 0.065));
+    const fr = mesh(pgeo('partyFrill', () => new THREE.TorusGeometry(0.2, 0.035, 6, 22)), mat('#7fd3ff'), 0, 0.02, 0); fr.rotation.x = Math.PI / 2; p.add(fr);
+  },
+  round(g, fz) {
+    const fr = mat('#2b2b33'), lens = mat('#d8eeff', { transparent: true, opacity: 0.28, depthWrite: false });
+    for (const s of [-1, 1]) {
+      g.add(mesh(pgeo('gRing', () => new THREE.TorusGeometry(0.1, 0.017, 6, 26)), fr, s * 0.16, -0.04, fz));
+      g.add(mesh(pgeo('gLens', () => new THREE.CircleGeometry(0.094, 24)), lens, s * 0.16, -0.04, fz - 0.004));
+    }
+    g.add(mesh(pgeo('gBridge', () => new THREE.TorusGeometry(0.034, 0.013, 5, 10, Math.PI)), fr, 0, -0.03, fz + 0.004));
+    PROP_MAKE.temples(g, fz, fr);
+  },
+  heart(g, fz) { PROP_MAKE.shapeGlasses(g, fz, pgeo('gHeart', () => new THREE.ExtrudeGeometry(heartShape, { depth: 0.08, bevelEnabled: false }).center()), mat('#e0283c'), mat('#ff8fbf', { emissive: '#7a1040', emissiveIntensity: 0.25 }), 0.26); },
+  star(g, fz) { PROP_MAKE.shapeGlasses(g, fz, pgeo('gStar', () => new THREE.ExtrudeGeometry(starShape, { depth: 0.08, bevelEnabled: false }).center()), mat('#ffc928'), mat('#ff8a3d', { emissive: '#6a2400', emissiveIntensity: 0.25 }), 0.3); },
+  shapeGlasses(g, fz, geo, frM, lensM, sz) {
+    for (const s of [-1, 1]) {
+      g.add(mesh(geo, frM, s * 0.165, -0.035, fz, sz, sz * 0.94, 0.25));
+      g.add(mesh(geo, lensM, s * 0.165, -0.035, fz + 0.014, sz * 0.74, sz * 0.7, 0.2));
+    }
+    g.add(mesh(GEO.box, frM, 0, -0.01, fz, 0.07, 0.022, 0.02));
+    PROP_MAKE.temples(g, fz, frM);
+  },
+  temples(g, fz, m) {
+    for (const s of [-1, 1]) { const t = mesh(pgeo('gTemple', () => new THREE.BoxGeometry(0.018, 0.018, 0.34)), m, s * 0.34, -0.03, fz - 0.15); t.rotation.y = -s * 0.49; g.add(t); }
+  },
+  nose(g, fz) { g.add(mesh(GEO.sphere, MAT.berryRed, 0, -0.1, fz + 0.01, 0.072)); },
+  stache(g, fz) {
+    const m = mat('#3b2418');
+    for (const s of [-1, 1]) {
+      const h = mesh(GEO.sphere, m, s * 0.075, -0.165, fz - 0.005, 0.085, 0.034, 0.035); h.rotation.z = s * 0.28; g.add(h);
+      g.add(mesh(GEO.sphereLo, m, s * 0.158, -0.14, fz - 0.015, 0.03));
+    }
+  },
+};
+// 아바타에 소품 입히기(같은 조합이면 그대로 둠)
+function setProps(av, pr) {
+  if (!av) return;
+  const u = av.userData, p = cleanProps(pr), sig = p.h + ',' + p.f;
+  if (!u.head || u.propSig === sig) return;
+  u.propSig = sig;
+  if (u.propG) { u.propG.removeFromParent(); u.propG = null; }
+  if (!u.capParts) { u.capParts = []; u.head.traverse(o => { if (o.isMesh && (o.name === 'ribbed_cap' || o.name === 'wool_pompom')) u.capParts.push(o); }); }
+  for (const o of u.capParts) o.visible = p.h === 'none';
+  const g = new THREE.Group(); g.name = 'props';
+  if (p.h !== 'none') PROP_MAKE[p.h](g);
+  if (p.f !== 'none') PROP_MAKE[p.f](g, u.faceMat ? 0.39 : 0.45);
+  if (!g.children.length) return;
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.cwDone = true; } });
+  u.head.add(g); u.propG = g;
 }
 const RING_GEO = new THREE.TorusGeometry(0.62, 0.06, 6, 28);
 function setTeamRing(av, tm) {
@@ -3286,6 +3477,7 @@ const P = { pos: new THREE.Vector3(0, 0, 8), vel: new THREE.Vector3(), vy: 0, ry
 let nick = str(LS.get('nick', ''), 12);
 let colorIdx = clamp(LS.get('color', Math.floor(Math.random() * COLORS.length)) | 0, 0, COLORS.length - 1);
 let look = lookFor(colorIdx, LS.get('look', null));
+let props = cleanProps(LS.get('props', null));
 let mode = 'intro';
 let entered = false;
 let me = null, meLabel = null;
@@ -3774,6 +3966,7 @@ function upsertPeer(p) {
       const old = pe.avatar; pe.avatar = makeAvatar(c, plk); pe.colorIdx = c; pe.lookSig = lsig; scene.add(pe.avatar);
       if (old) { pe.avatar.position.copy(old.position); pe.avatar.rotation.y = old.rotation.y; scene.remove(old); }
     }
+    setProps(pe.avatar, Array.isArray(pr.pp) ? { h: pr.pp[0], f: pr.pp[1] } : null);
     const pin = inStudio(pr.p[0], pr.p[2]);
     pe.tpos.set(pin ? pr.p[0] : clamp(pr.p[0], -140, 140), clamp(pr.p[1], -5, 40), pin ? pr.p[2] : clamp(pr.p[2], -140, 140));
     pe.try = isNum(pr.ry) ? pr.ry : 0;
@@ -4232,7 +4425,7 @@ function actionContext() {
       if (h) return h.bt.ph === 'shoot' ? { kind: 'boothJoin', key: 'E', text: `📷 ${h.nick}님과 같이 찍기`, dim: `${BOOTHS[kb].nm}에 들어가요`, b: kb } : { kind: 'none', text: `${BOOTHS[kb].nm} 사용 중`, dim: `${h.nick}님이 사진을 고르는 중` };
       return { kind: 'booth', key: 'E', text: `📷 ${BOOTHS[kb].nm} 촬영하기`, dim: `${BOOTHS[kb].concept} · 8번 찍고 4장 고르기`, b: kb };
     }
-    if (nearMirror()) return { kind: 'mirror', key: 'E', text: '🪞 거울 보기', dim: '내 모습 바꾸기' };
+    if (nearMirror()) return { kind: 'mirror', key: 'E', text: '🪞 거울 · 소품', dim: '머리띠·모자·안경 골라 쓰기' };
     return { kind: 'none', text: '부스 앞 키오스크에서 네컷을 찍어요', dim: '오른쪽 화면 앞에서 E' };
   }
   if (!rolling && nearStudioDoorOut()) return { kind: 'enter', key: 'E', text: '📷 사진관 들어가기', dim: '친구들과 네컷을 찍는 곳이에요' };
@@ -4310,7 +4503,7 @@ function doPrimary() {
     case 'leave': leaveStudio(); break;
     case 'booth': openKiosk(ctx.b); break;
     case 'boothJoin': joinBooth(ctx.b); break;
-    case 'mirror': openLookEditor(); break;
+    case 'mirror': openLookEditor('props'); break;
     case 'stack': startBalance('stack', wip, null); break;
     case 'give': startBalance('give', ctx.pe.wip, ctx.pe); break;
     case 'base': {
@@ -5597,7 +5790,7 @@ function publishPresence(now) {
   if (!NET.room || !entered || now - presAt < (peers.size ? 100 : 1000)) return;
   presAt = now;
   const pr = {
-    v: 1, nk: nick, c: colorIdx, lk: [look.h, look.k, look.s], uid: NET.uid,
+    v: 1, nk: nick, c: colorIdx, lk: [look.h, look.k, look.s], pp: [props.h, props.f], uid: NET.uid,
     p: [r2(P.pos.x), r2(P.pos.y), r2(P.pos.z)], ry: r2(((P.ry % TAU) + TAU) % TAU), st: P.anim,
     bl: rolling ? r3(rolling.r) : 0,
     wip: wip ? { x: wip.x, z: wip.z, ry: r2(wip.ry), b: wip.b, d: wip.d, nm: wip.nm || '' } : null,
@@ -6242,6 +6435,27 @@ $('#kiosk-go').addEventListener('click', () => { const sel = $('#kiosk [data-lay
 $('#booth-exit').addEventListener('click', () => boothExit());
 $('#booth-now').addEventListener('click', () => { if (BOOTH && BOOTH.host && BOOTH.phase === 'shoot') BOOTH.next = performance.now(); });
 $('#booth-pose').addEventListener('click', e => { const b = e.target.closest('[data-pose]'); if (b) boothPose(b.dataset.pose); });
+// 소품 고르기: 입장·내 모습 화면은 미리보기만 바꾸고, 부스 안에서는 바로 써요
+function fillPropRow(box, kind) {
+  const M = kind === 'h' ? PROP_H : PROP_F;
+  for (const k of Object.keys(M)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pc'; b.dataset.pk = kind; b.dataset.pv = k;
+    b.textContent = M[k].ic; b.title = M[k].nm; b.setAttribute('aria-label', M[k].nm); b.setAttribute('role', 'radio');
+    box.append(b);
+  }
+}
+function syncPropChips() { for (const b of $$('.pc[data-pk]')) b.setAttribute('aria-checked', String(props[b.dataset.pk] === b.dataset.pv)); }
+function wearProp(kind, v, live) {
+  if (!hasKey(kind === 'h' ? PROP_H : PROP_F, v) || props[kind] === v) return;
+  props = { ...props, [kind]: v }; syncPropChips(); sfx('pop');
+  if (live) { LS.set('props', props); setProps(me, props); }
+  else lookCheer();
+}
+fillPropRow($('#pr-head'), 'h'); fillPropRow($('#pr-face'), 'f');
+{ const bp = $('#booth-props'); fillPropRow(bp, 'h'); const sep = document.createElement('i'); sep.className = 'pc-sep'; bp.append(sep); fillPropRow(bp, 'f'); }
+syncPropChips();
+for (const id of ['#pr-head', '#pr-face']) $(id).addEventListener('click', e => { const b = e.target.closest('.pc'); if (b) wearProp(b.dataset.pk, b.dataset.pv, false); });
+$('#booth-props').addEventListener('click', e => { const b = e.target.closest('.pc'); if (b) wearProp(b.dataset.pk, b.dataset.pv, true); });
 $('#bpick-next').addEventListener('click', () => boothPickDone());
 $('#bdeco-frames').addEventListener('click', e => { const b = e.target.closest('[data-fr]'); if (b && BOOTH) { BOOTH.frame = b.dataset.fr; syncBoothDeco(); sfx('pop'); } });
 $('#bdeco-filters').addEventListener('click', e => { const b = e.target.closest('[data-fl]'); if (b && BOOTH) { BOOTH.filter = b.dataset.fl; syncBoothDeco(); sfx('pop'); } });
@@ -6391,6 +6605,8 @@ syncSwatches();
 $('#look-dice').addEventListener('click', () => {
   colorIdx = Math.floor(Math.random() * COLORS.length);
   look = { h: Math.floor(Math.random() * HAIR.length), k: Math.floor(Math.random() * KNIT.length), s: Math.floor(Math.random() * KNIT.length) };
+  const pick = o => { const ks = Object.keys(o); return Math.random() < 0.4 ? 'none' : ks[1 + Math.floor(Math.random() * (ks.length - 1))]; };
+  props = { h: pick(PROP_H), f: pick(PROP_F) }; syncPropChips();
   syncSwatches(); lookCheer(); sfx('pop');
 });
 
@@ -6422,6 +6638,7 @@ function lookPreviewFrame(dt) {
   if (w !== LOOK.w || h !== LOOK.h) { LOOK.w = w; LOOK.h = h; LOOK.r.setSize(w, h, false); LOOK.cam.aspect = w / h; LOOK.cam.updateProjectionMatrix(); }
   const sig = `${colorIdx}:${look.h}:${look.k}:${look.s}`;
   if (sig !== LOOK.sig) { if (LOOK.av) LOOK.scene.remove(LOOK.av); LOOK.av = makeAvatar(colorIdx, look); LOOK.scene.add(LOOK.av); LOOK.sig = sig; }
+  setProps(LOOK.av, props);
   if (!LOOK.drag) LOOK.yaw += dt * LOOK.spin;
   LOOK.av.rotation.y = Math.sin(LOOK.yaw) * 0.9;
   if (LOOK.emote && clock - LOOK.emote.t0 > 1.4) LOOK.emote = null;
@@ -6436,23 +6653,24 @@ function lookPreviewFrame(dt) {
 
 /* 게임 중 '내 모습 바꾸기' */
 let lookBackup = null;
-function openLookEditor() {
+function openLookEditor(focus) {
   if (!entered) return;
-  lookBackup = { nick, colorIdx, look: { ...look } };
+  lookBackup = { nick, colorIdx, look: { ...look }, props: { ...props } };
   $('#nick').value = nick; syncSwatches();
   $('.entry-card').classList.add('edit');
   $('#entry-title').textContent = '내 모습 바꾸기';
   $('#enter').textContent = '이대로 바꾸기';
   $('#look-cancel').hidden = false;
-  $('#entry').hidden = false; mode = 'look'; keys.clear();
+  $('#entry').hidden = false; mode = 'look'; keys.clear(); syncPropChips();
+  if (focus === 'props') requestAnimationFrame(() => { try { $('#prop-label').scrollIntoView({ block: 'center' }); } catch { /* 무시 */ } });
 }
 function closeLookEditor(apply) {
   if (mode !== 'look') return;
   if (apply) {
     nick = str($('#nick').value.trim(), 12) || nick;
-    LS.set('nick', nick); LS.set('color', colorIdx); LS.set('look', look);
+    LS.set('nick', nick); LS.set('color', colorIdx); LS.set('look', look); LS.set('props', props);
     const pos = me.position.clone(), ry = me.rotation.y;
-    scene.remove(me); me = makeAvatar(colorIdx, look); me.position.copy(pos); me.rotation.y = ry; scene.add(me);
+    scene.remove(me); me = makeAvatar(colorIdx, look); setProps(me, props); me.position.copy(pos); me.rotation.y = ry; scene.add(me);
     if (NET.mode === 'online' && NET.canSave && myItems.length) {
       const mine = dbSnow.find(d => d.uid === NET.uid);
       if (mine && (mine.nk !== nick || mine.c !== colorIdx)) saveMine();
@@ -6460,7 +6678,7 @@ function closeLookEditor(apply) {
     reconcileSnowmen(); updateChips();
     toast('새 모습으로 바꿨어요.');
   } else if (lookBackup) {
-    nick = lookBackup.nick; colorIdx = lookBackup.colorIdx; look = lookBackup.look; syncSwatches();
+    nick = lookBackup.nick; colorIdx = lookBackup.colorIdx; look = lookBackup.look; props = lookBackup.props; syncSwatches();
   }
   lookBackup = null;
   $('#entry').hidden = true; $('.entry-card').classList.remove('edit');
@@ -6476,14 +6694,14 @@ $('#enter').addEventListener('click', () => { if (mode === 'look') closeLookEdit
 function enterGame() {
   if (entered) return;
   nick = str($('#nick').value.trim(), 12) || nick || randomName().split(' ')[1];
-  LS.set('nick', nick); LS.set('color', colorIdx); LS.set('look', look);
+  LS.set('nick', nick); LS.set('color', colorIdx); LS.set('look', look); LS.set('props', props);
   $('#entry').hidden = true; document.body.classList.remove('intro');
   entered = true; mode = 'play';
   const a = Math.random() * TAU;
   P.pos.set(Math.cos(a) * 7, 0, Math.sin(a) * 7); resolveCollisions(P.pos, 0.42); P.pos.y = groundY(P.pos.x, P.pos.z);
   P.ry = Math.atan2(-P.pos.x, -P.pos.z); // 광장 트리와 명예의 전당을 바라봄
   CAM.yaw = P.ry + Math.PI; CAM.pitch = 0.32; CAM.snap = true;
-  me = makeAvatar(colorIdx, look); scene.add(me);
+  me = makeAvatar(colorIdx, look); setProps(me, props); scene.add(me);
   meLabel = makeLabel('me');
   if (wip) {
     rebuildWip();
@@ -6507,7 +6725,18 @@ function enterGame() {
    HUD 갱신
    ================================================================ */
 let hudAt = 0, lastPrompt = '', promptWarn = false;
+// 위쪽 HUD 자리 재기: 메뉴 버튼 줄 너비, 제목 칸 아래 끝
+function layoutTopHud() {
+  const tb = $('#toolbar').getBoundingClientRect(), br = $('#brand').getBoundingClientRect(), st = document.documentElement.style;
+  const w = Math.round(tb.width) + 'px', b = Math.round(br.bottom) + 'px';
+  if (st.getPropertyValue('--tbw') !== w) st.setProperty('--tbw', w);
+  if (st.getPropertyValue('--brand-b') !== b) st.setProperty('--brand-b', b);
+  // 소식 창이 떠 있으면 알림은 그 아래로
+  const nw = $('#news'), t = nw && !nw.hidden && innerHeight > innerWidth ? Math.round(nw.getBoundingClientRect().bottom + 8) + 'px' : '';
+  if (st.getPropertyValue('--toast-top') !== t) { if (t) st.setProperty('--toast-top', t); else st.removeProperty('--toast-top'); }
+}
 function placeCenterBottom() {
+  layoutTopHud();
   const cb = $('#center-bottom'), up = document.body.classList.contains('touch') && innerHeight > innerWidth;
   cb.classList.toggle('cb-top', up);
   if (!up) { cb.style.top = ''; return; }
@@ -7026,11 +7255,9 @@ function buildStudio() {
     for (let i = 0; i < 5; i++) for (const s of [-1, 1]) add(GEO.sphereLo, bulb, -hw + 0.12, 1.25 + i * 0.32, MIRROR.lz + s * 0.66, 0.05, 0.05, 0.05, false);
     add(GEO.box, MAT.wood, -hw + 0.32, 0.86, MIRROR.lz, 0.5, 0.06, 1.5); add(GEO.box, MAT.woodDark, -hw + 0.32, 0.43, MIRROR.lz, 0.44, 0.86, 1.4);
     // 소품: 고깔, 머리띠, 왕관
-    add(GEO.cone, mat('#ff7aa8'), -hw + 0.3, 1.1, MIRROR.lz - 0.5, 0.13, 0.36, 0.13); add(GEO.sphereLo, MAT.yellow, -hw + 0.3, 1.3, MIRROR.lz - 0.5, 0.045);
-    const band = put(G, new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 6, 18, Math.PI), mat('#9b5de5'))); band.position.set(-hw + 0.32, 0.92, MIRROR.lz - 0.12);
-    for (const s of [-1, 1]) add(GEO.sphereLo, mat('#9b5de5'), -hw + 0.32 + s * 0.1, 1.04, MIRROR.lz - 0.12, 0.05);
-    add(GEO.cylTaper, MAT.gold, -hw + 0.3, 0.97, MIRROR.lz + 0.3, 0.12, 0.14, 0.12);
-    add(GEO.heart, MAT.red, -hw + 0.3, 1.08, MIRROR.lz + 0.6, 0.14, 0.14, 0.14).rotation.y = Math.PI / 2;
+    [['santa', -0.52, 0.84], ['bunny', -0.18, 0.86], ['crown', 0.16, 0.73], ['heart', 0.5, 0.96]].forEach(([k, dz, y]) => {
+      const d = new THREE.Group(); PROP_MAKE[k](d, 0); d.scale.setScalar(0.42); d.position.set(-hw + 0.32, y, MIRROR.lz + dz); d.rotation.y = Math.PI / 2 + (dz > 0 ? -0.25 : 0.25); G.add(d);
+    });
     ob(-hw + 0.32, MIRROR.lz, 0.6, 1.6);
   }
   // 오른쪽 벽: 손님 네컷 사진 벽, 소파
