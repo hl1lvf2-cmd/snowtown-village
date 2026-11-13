@@ -845,6 +845,7 @@ body.touch .keys.desk { display: none; }
       <div class="set-row"><span>점검</span><div class="row" id="set-debug"><button type="button" class="pill" data-v="off">끄기</button><button type="button" class="pill" data-v="on">성능 보기</button></div></div>
       <div class="set-row"><span>채팅</span><div class="row" id="set-chat"><button type="button" class="pill" data-v="on">보기</button><button type="button" class="pill" data-v="off">끄기</button></div></div>
       <div class="set-row"><span>화질</span><div class="row" id="set-quality"><button type="button" class="pill" data-v="high">고화질</button><button type="button" class="pill" data-v="low">가볍게</button></div></div>
+      <div class="set-row"><span>사진</span><div class="row" id="set-photohq"><button type="button" class="pill" data-v="on" title="가볍게 설정이어도 사진 모드와 촬영 부스에서는 고화질로 찍어요">고화질로 찍기</button><button type="button" class="pill" data-v="off" title="화질 설정 그대로 찍어요">설정 그대로</button></div></div>
       <div class="set-actions">
         <button type="button" class="btn sm" id="btn-look">내 모습 바꾸기</button>
         <button type="button" class="btn sm" id="btn-help">놀이 방법</button>
@@ -2220,7 +2221,7 @@ const treeSpots = [], TREE_CHUNKS = [];
   }
 }
 function updateTreeLod() {
-  const near = quality === 'low' ? 46 : 74, cx = camera.position.x, cz = camera.position.z;
+  const near = effQ() === 'low' ? 46 : 74, cx = camera.position.x, cz = camera.position.z;
   for (const c of TREE_CHUNKS) { const h = Math.hypot(c.x - cx, c.z - cz) < near; c.hi.visible = h; c.lo.visible = !h; }
 }
 {
@@ -4965,7 +4966,11 @@ let rankWeek = [];
 const loaded = { snow: false, likes: false, hall: false, giant: false, notes: false };
 let quality = LS.get('quality', matchMedia('(pointer: coarse)').matches ? 'low' : 'high');
 let LITE = LS.get('lite', false); // 아주 느린 기기: 해상도를 조금 더 낮춤
-const QUAL = () => quality === 'low' ? { lodNear: LITE ? 18 : 24, lodFar: LITE ? 55 : 75, dpr: LITE ? 0.75 : 1, snow: LITE ? 250 : 600, shadows: false } : { lodNear: 45, lodFar: 130, dpr: Math.min(window.devicePixelRatio || 1, 1.75), snow: snowfall.n, shadows: true };
+// 사진 찍을 땐 고화질: 가볍게 설정이어도 사진 모드·촬영 부스 동안만 고화질로 그렸다가 끝나면 되돌림
+let photoHQ = LS.get('photoHQ', true), appliedQ = '';
+const photoBoost = () => photoHQ && quality !== 'high' && entered && (mode === 'photo' || !!BOOTH);
+const effQ = () => (quality === 'high' || photoBoost() ? 'high' : 'low');
+const QUAL = () => effQ() === 'low' ? { lodNear: LITE ? 18 : 24, lodFar: LITE ? 55 : 75, dpr: LITE ? 0.75 : 1, snow: LITE ? 250 : 600, shadows: false } : { lodNear: 45, lodFar: 130, dpr: Math.min(window.devicePixelRatio || 1, 1.75), snow: snowfall.n, shadows: true };
 let giantTotal = 0, giantPrev = -1, giantContrib = [];
 const GIANT_DECO = { e: 'coal', n: 'carrot', m: 'smile', h: 'top', a: 'up', x: 'bowtie', b: 4, c: 0, s: 1 };
 function giantBalls(total) {
@@ -6571,6 +6576,7 @@ function snapCaption(names, e) {
 }
 function renderGuide(pw, ph) {
   const r = layoutGuide(); if (!r) return null;
+  if (effQ() !== appliedQ) applyQuality();
   const W = innerWidth, H = innerHeight, pr = renderer.getPixelRatio();
   const offX = Math.round(W / 2 - (r.x + r.w / 2)), offY = Math.round(H / 2 - (r.y + r.h / 2));
   const out = makeCanvas(pw, ph);
@@ -7511,7 +7517,7 @@ function scheduleBgm() {
    ================================================================ */
 function renderSettings() {
   const mark = (id, v) => $$(`#${id} [data-v]`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
-  mark('set-time', themeName); mark('set-sound', AUD.mode); mark('set-quality', quality); mark('set-chat', chatOff ? 'off' : 'on'); mark('set-debug', DBG.on ? 'on' : 'off');
+  mark('set-time', themeName); mark('set-sound', AUD.mode); mark('set-quality', quality); mark('set-photohq', photoHQ ? 'on' : 'off'); mark('set-chat', chatOff ? 'off' : 'on'); mark('set-debug', DBG.on ? 'on' : 'off');
   $('#btn-admin').textContent = reportCount() ? `마을 관리 · 신고 ${reportCount()}` : '마을 관리';
 }
 function openSettings() { renderSettings(); $('#settings').hidden = false; $('#btn-settings').setAttribute('aria-pressed', 'true'); }
@@ -7519,7 +7525,7 @@ function closeSettings() { $('#settings').hidden = true; $('#btn-settings').setA
 // 화면이 버벅이면 알아서 가볍게: 4초씩 재서 두 번 연속 느리면 한 단계 낮춤(직접 고른 화질은 존중)
 const PERF = { t0: 0, n: 0, slow: 0, done: false };
 function watchPerf(now) {
-  if (!entered || PERF.done || document.hidden || mode !== 'play') { PERF.t0 = 0; PERF.n = 0; return; }
+  if (!entered || PERF.done || document.hidden || mode !== 'play' || photoBoost()) { PERF.t0 = 0; PERF.n = 0; return; }
   if (!PERF.t0) { PERF.t0 = now; PERF.n = 0; return; }
   PERF.n++;
   if (now - PERF.t0 < 4000) return;
@@ -7533,6 +7539,7 @@ function watchPerf(now) {
   else PERF.done = true;
 }
 function applyQuality() {
+  appliedQ = effQ();
   const Q = QUAL();
   renderer.setPixelRatio(Q.dpr); renderer.setSize(innerWidth, innerHeight);
   if (renderer.shadowMap.enabled !== Q.shadows) {
@@ -7710,7 +7717,7 @@ function resizePost() {
 function renderFrame() {
   CURVE.curveCenter.value.set(camera.position.x, camera.position.z);
   if (DBG.on) renderer.info.reset();
-  if (PP && quality === 'high') { PP.finish.uniforms.blurAmt.value = mode === 'photo' ? 1.3 : mode === 'decorate' ? 0.5 : 1.0; PP.composer.render(); }
+  if (PP && effQ() === 'high') { PP.finish.uniforms.blurAmt.value = mode === 'photo' ? 1.3 : mode === 'decorate' ? 0.5 : 1.0; PP.composer.render(); }
   else renderer.render(scene, camera);
   if (DBG.on) { DBG.calls = renderer.info.render.calls; DBG.tris = renderer.info.render.triangles; }
 }
@@ -7745,7 +7752,7 @@ function dbgText(fps) {
   const net = navigator.connection && navigator.connection.effectiveType ? ` · 망 ${navigator.connection.effectiveType}` : '';
   return [
     `속도 ${Math.round(fps)}fps (최저 ${DBG.minFps < 999 ? Math.round(DBG.minFps) : '-'}) · 가장 긴 프레임 ${Math.round(DBG.maxMs)}ms`,
-    `화질 ${quality === 'high' ? '고화질' : '가볍게'}${LITE ? '(아주 가볍게)' : ''} · 그림자 ${renderer.shadowMap.enabled ? '켬' : '끔'} · 그리기 ${DBG.calls}번 · 면 ${Math.round(DBG.tris / 1000)}k`,
+    `화질 ${quality === 'high' ? '고화질' : '가볍게'}${LITE ? '(아주 가볍게)' : ''}${photoBoost() ? ' → 사진용 고화질' : ''} · 그림자 ${renderer.shadowMap.enabled ? '켬' : '끔'} · 그리기 ${DBG.calls}번 · 면 ${Math.round(DBG.tris / 1000)}k`,
     `화면 ${innerWidth}×${innerHeight} · 기기배율 ${(devicePixelRatio || 1).toFixed(2)} · 그림배율 ${pr.toFixed(2)} (${Math.round(sz.x * pr)}×${Math.round(sz.y * pr)})`,
     `기기 ${d.os} · ${d.br}${d.standalone ? ' · 홈 화면 앱' : ''}${document.fullscreenElement ? ' · 전체화면' : ''}${document.body.classList.contains('touch') ? ' · 터치' : ''}`,
     `GPU ${String(DBG.gpu).slice(0, 60)}`,
@@ -7937,6 +7944,7 @@ $('#btn-settings').addEventListener('click', e => { e.stopPropagation(); if ($('
 $('#set-time').addEventListener('click', e => { const v = e.target.dataset && e.target.dataset.v; if (v) applyTheme(v); });
 $('#set-sound').addEventListener('click', e => { const v = e.target.dataset && e.target.dataset.v; if (!v) return; AUD.mode = v; LS.set('sound', v); initAudio(); applySound(); renderSettings(); });
 $('#set-chat').addEventListener('click', e => { const v = e.target.dataset && e.target.dataset.v; if (!v) return; chatOff = v === 'off'; LS.set('chatOff', chatOff); if (!chatOff) { muted.clear(); LS.set('muted', []); } else for (const el of $$('#chatlog .msg[data-who]')) el.remove(); renderSettings(); toast(chatOff ? '친구들 채팅을 보지 않아요.' : '채팅을 다시 봐요. 숨긴 사람도 풀었어요.'); });
+$('#set-photohq').addEventListener('click', e => { const v = e.target.dataset && e.target.dataset.v; if (!v) return; photoHQ = v === 'on'; LS.set('photoHQ', photoHQ); renderSettings(); toast(photoHQ ? '사진 찍을 땐 고화질로 바꿔서 찍어요.' : '사진도 화질 설정 그대로 찍어요.'); });
 $('#set-quality').addEventListener('click', e => { const v = e.target.dataset && e.target.dataset.v; if (!v) return; quality = v; LITE = false; LS.set('quality', v); LS.set('lite', false); LS.set('qualityManual', true); applyQuality(); });
 $('#btn-admin').addEventListener('click', () => { closeSettings(); renderAdmin(); $('#admin').hidden = false; });
 $('#admin-close').addEventListener('click', () => { $('#admin').hidden = true; });
@@ -8514,6 +8522,7 @@ function frame(now) {
     if (me.userData.contactN !== stepSeen) { stepSeen = me.userData.contactN; if (P.grounded && (P.anim === 'walk' || P.anim === 'run' || P.anim === 'roll')) sfx('step'); }
   }
   setIndoor(entered && inStudio(P.pos.x, P.pos.z));
+  if (effQ() !== appliedQ) applyQuality();
   updateBooth(performance.now());
   updatePeers(dt);
   updatePets(dt);
@@ -9099,6 +9108,7 @@ function boothFrame(b, aspect) {
   return { cam: new THREE.Vector3(cx, 1.32, camZ), target: new THREE.Vector3(tx, 1.04, zs), fov, names: pts.map(p => p.nm) };
 }
 function renderBoothShot(b, w, h) {
+  if (effQ() !== appliedQ) applyQuality();
   const f = boothFrame(b, w / h), W = innerWidth, H = innerHeight, pr = renderer.getPixelRatio();
   const keep = { pos: camera.position.clone(), q: camera.quaternion.clone(), fov: camera.fov, aspect: camera.aspect, view: camera.view && camera.view.enabled ? { ...camera.view } : null };
   const unit = boothUnits[b], uv = unit.visible; unit.visible = false;
