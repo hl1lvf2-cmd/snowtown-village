@@ -3256,6 +3256,8 @@ function addJoints(root) {
   // 다리를 곧게: 엉덩이 축을 조금 벌리고 올려, 안쪽으로 모아도 장화가 붙지 않고 바닥에 닿게
   u.legL.position.x += LEG_W; u.legR.position.x -= LEG_W; u.legL.position.y += LEG_UP; u.legR.position.y += LEG_UP;
   u.legIn = LEG_IN;
+  // 무릎: 먼저 장화를 평평하게 되돌린 뒤 몸 옆 축으로 굽힘(순서가 반대면 무릎을 굽힐 때 장화가 바깥으로 튐)
+  u.kneeL.rotation.order = u.kneeR.rotation.order = 'ZYX';
   return true;
 }
 /* ================================================================
@@ -4596,62 +4598,70 @@ function armHang(o, sd, swing = 0, out = 0, bend = 0, w = 1) {
   armTo(o, sd, ARM_HANG[0] + swing, ARM_HANG[1] + out, lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), w);
 }
 const GAIT_V = [0.8, 3, 5, 8.2, 10];
-const GAIT_T = [0.8, 0.6, 0.5, 0.4, 0.36];         // 한 주기(왼발→왼발) 초
-const GAIT_B = [0.62, 0.57, 0.55, 0.4, 0.38];      // 한 발이 땅에 닿아 있는 비율(걷기는 두 발이 같이 닿는 때가 있고, 달리기는 뜸)
-const GAIT_S = [0.14, 0.3, 0.37, 0.44, 0.46];      // 보폭(디딘 발이 뒤로 밀리는 거리)
-const GAIT_LIFT = [0.05, 0.09, 0.11, 0.15, 0.16];
-const GAIT_BOB = [0.01, 0.026, 0.034, 0.05, 0.052];
-const GAIT_CROUCH = [0.004, 0.012, 0.02, 0.045, 0.05];
+const GAIT_T = [0.62, 0.5, 0.44, 0.36, 0.33];       // 한 주기(왼발→왼발) 초: 종종걸음
+const GAIT_B = [0.6, 0.55, 0.52, 0.38, 0.36];       // 한 발이 땅에 닿아 있는 비율(달리기는 두 발 다 뜨는 때가 있음)
+const GAIT_S = [0.1, 0.2, 0.25, 0.36, 0.38];        // 보폭: 짧게
+const GAIT_LIFT = [0.06, 0.1, 0.125, 0.15, 0.16];   // 무릎을 올려 발을 콩콩
+const GAIT_BOB = [0.014, 0.032, 0.042, 0.056, 0.06];
+const GAIT_CROUCH = [0.006, 0.01, 0.012, 0.028, 0.032];
+const FOOT_X = 0.2;   // 발이 몸 가운데서 옆으로 떨어진 거리(몸을 기울일 때 발이 땅에 붙어 있게 높이를 맞춤)
 function gaitAt(arr, v) {
   if (v <= GAIT_V[0]) return arr[0];
   for (let i = 1; i < GAIT_V.length; i++) if (v <= GAIT_V[i]) return lerp(arr[i - 1], arr[i], (v - GAIT_V[i - 1]) / (GAIT_V[i] - GAIT_V[i - 1]));
   return arr[arr.length - 1];
 }
-// 서 있기: 팔은 옆에 편히 내리고, 숨 쉬며, 가끔 무게를 다른 다리로 옮김(짝다리)
+// 몸을 좌우로 기울이면(발 사이를 축으로) 한쪽 발이 땅에 묻히므로 그만큼 발 높이를 고쳐 줌
+function feetOnGround(o, zl, yl, zr, yr) {
+  const rc = FOOT_X * Math.sin(o.tz);
+  footTo(o, 'l', zl, yl - rc); footTo(o, 'r', zr, yr + rc);
+}
+// 서 있기: 팔은 몸 옆에 살짝 띄워 내리고, 숨 쉴 때 통통, 몸을 아주 조금 좌우로 흔들며 가끔 고개를 갸웃
 function poseIdle(o, u, t) {
   copyPose(o, BASE_POSE);
-  const br = Math.sin(t * 2.1 + u.seed), wt = clamp(Math.sin(t * 0.23 + u.seed * 2) * 1.8, -1, 1);   // wt: +1 왼다리에 무게
-  o.by = -0.004 - 0.004 * br; o.sq = 0.007 * br; o.tx = -0.02;
-  o.bx = 0.014 * wt; o.tz = -0.03 * wt; o.hz = 0.035 * wt;
-  armHang(o, 'L', -0.07 + 0.02 * br, 0.01 + 0.03 * Math.max(0, -wt), 0.26 + 0.03 * br);
-  armHang(o, 'R', -0.07 + 0.02 * br, 0.01 + 0.03 * Math.max(0, wt), 0.26 + 0.03 * br);
-  o.lz = 0.02 - 0.025 * wt; o.rz = -0.02 - 0.025 * wt;
-  // 무게 실린 다리는 곧게, 쉬는 다리는 무릎을 살짝 굽혀 조금 앞으로
-  footTo(o, 'l', 0.01 + 0.03 * Math.max(0, -wt), 0.012 * Math.max(0, -wt)); footTo(o, 'r', 0.01 + 0.03 * Math.max(0, wt), 0.012 * Math.max(0, wt));
+  const br = Math.sin(t * 2.3 + u.seed), rk = Math.sin(t * 1.3 + u.seed * 1.7);
+  const tl = Math.sin(t * 0.5 + u.seed * 3), tilt = Math.sign(tl) * Math.pow(Math.abs(tl), 3);   // 대부분 곧고 가끔 갸웃
+  o.by = -0.006 - 0.006 * br; o.sq = 0.012 * br; o.tx = -0.025;
+  o.tz = 0.02 * rk; o.hz = 0.1 * tilt - 0.5 * o.tz; o.hx = -0.04;
+  armHang(o, 'L', -0.08 - 0.02 * rk, 0.1 + 0.01 * br, 0.5 + 0.04 * br);
+  armHang(o, 'R', -0.08 + 0.02 * rk, 0.1 + 0.01 * br, 0.5 + 0.04 * br);
+  o.lz = 0.025; o.rz = -0.025;
+  feetOnGround(o, 0.01, 0, 0.01, 0);
 }
-// 걷기·달리기: 다리는 시계추처럼 크게, 디딜 땐 몸이 내려앉고 지나갈 땐 솟음. 몸은 디딘 발 쪽으로 살짝 뒤뚱, 팔은 몸 옆에서 반대로 흔듦
+// 걷기·달리기: 짧고 빠른 걸음으로 통통 튀며 걸음. 발이 닿으면 몸이 눌렸다가 솟고, 디딘 발 쪽으로 뒤뚱,
+// 고개는 몸을 살짝 늦게 따라 흔들리고, 팔은 몸 옆에서 살짝 벌린 채 반대로 흔듦
 function poseGait(o, u, v, dt, mode) {
   const T = gaitAt(GAIT_T, v), B = gaitAt(GAIT_B, v), run = clamp((v - 5) / 3.2, 0, 1);
   const prev = u.gph || 0, ph = (prev + dt / T) % 1; u.gph = ph;
   if (ph < prev || (prev < 0.5 && ph >= 0.5)) u.contactN = (u.contactN || 0) + 1;
   const S = gaitAt(GAIT_S, v), lift = gaitAt(GAIT_LIFT, v), bob = gaitAt(GAIT_BOB, v), cr = gaitAt(GAIT_CROUCH, v);
   copyPose(o, BASE_POSE);
-  // 걷기: 발이 닿을 때 가장 낮고 디딘 다리 위를 지날 때 가장 높음. 달리기: 디딘 한가운데서 가장 낮음
-  const low = lerp(Math.cos(2 * TAU * ph), Math.cos(2 * TAU * (ph - B / 2)), run);
-  o.by = -cr - bob * (0.5 + 0.5 * low);
-  o.sq = -(0.01 + 0.02 * run) * Math.max(0, low);
-  o.tx = 0.03 + 0.03 * clamp(v / 5, 0, 1) + 0.11 * run;
-  const st = Math.cos(TAU * (ph - B / 2));              // 왼발로 디딜 때 +1
-  o.bx = 0.016 * st * (1 - 0.6 * run); o.tz = -(0.045 - 0.02 * run) * st;
-  o.ty = (0.05 + 0.04 * run) * Math.cos(TAU * ph - 0.3);  // 어깨는 앞으로 나간 팔 쪽으로
-  o.hx = -0.04 * Math.max(0, low) * (0.6 + run); o.hz = 0.025 * st;
+  // 한 걸음 안의 위치(0 = 발이 닿는 순간; 달리기는 디딘 한가운데가 가장 낮음)
+  const s2 = (((ph - run * B * 0.5) * 2) % 1 + 1) % 1, bn = Math.pow(Math.sin(Math.PI * s2), 0.75);
+  o.by = -cr - bob * (1 - bn);
+  o.sq = -0.04 * Math.pow(1 - bn, 3) + 0.016 * bn;      // 닿을 때 꾹 눌리고 떠오를 때 살짝 늘어남
+  o.tx = 0.02 + 0.1 * run;
+  const st = Math.cos(TAU * (ph - B / 2)), stLag = Math.cos(TAU * (ph - B / 2) - 0.7);   // 왼발로 디딜 때 +1
+  o.bx = 0; o.tz = -(0.065 - 0.02 * run) * st;
+  o.ty = 0.06 * Math.cos(TAU * ph - 0.3);
+  o.hx = -0.03 + 0.08 * Math.pow(1 - bn, 2);              // 발이 닿을 때 고개를 끄덕
+  o.hz = -0.085 * stLag - 0.5 * o.tz;                       // 머리는 몸보다 조금 늦게 크게 갸웃(오뚝이처럼)
   if (mode === 'roll') o.tx = 0.24;
   else if (mode === 'push') o.tx = 0.42;
   const foot = p => {
     if (p < B) return [S / 2 - S * (p / B), 0];
     const s = (p - B) / (1 - B);
-    return [-S / 2 + S * ease(s), lift * Math.sin(Math.PI * Math.pow(s, 0.8))];
+    return [-S / 2 + S * ease(s), lift * Math.sin(Math.PI * Math.pow(s, 0.75))];
   };
   const zc = HIP_Y * Math.sin(o.tx) * 0.55, fl = foot(ph), fr = foot((ph + 0.5) % 1);
-  o.lz = 0.03; o.rz = -0.03;
-  footTo(o, 'l', zc + fl[0], fl[1]); footTo(o, 'r', zc + fr[0], fr[1]);
+  o.lz = 0.025; o.rz = -0.025;
+  feetOnGround(o, zc + fl[0], fl[1], zc + fr[0], fr[1]);
   if (mode === 'roll') { o.aLx = o.aRx = -0.95; o.aLz = 0.2; o.aRz = -0.2; o.eLx = o.eRx = -0.35; return; }
   if (mode === 'push') { o.aLx = o.aRx = -1.3; o.aLz = 0.14; o.aRz = -0.14; o.eLx = o.eRx = -0.1; return; }
-  // 팔: 반대쪽 다리와 함께. 앞으로 더 크게, 앞으로 올 때 팔꿈치를 더 굽히고, 뒤로 갈 땐 몸에 안 닿게 살짝 벌림
-  const A = lerp(0.48, 0.85, run), w = Math.cos(TAU * ph - 0.35);   // w>0: 왼팔이 뒤
+  // 팔: 반대쪽 다리와 함께. 펭귄처럼 살짝 벌리고, 발이 닿을 때 더 벌어졌다 모임
+  const A = lerp(0.38, 0.72, run), w = Math.cos(TAU * ph - 0.35), flap = Math.pow(1 - bn, 2);   // w>0: 왼팔이 뒤
   const arm = (sd, x) => {
-    const s = x > 0 ? x * A * 0.7 : x * A;
-    armHang(o, sd, s, lerp(0, 0.08, run) + 0.05 * Math.max(0, x), lerp(0.24, 1.2, run) + lerp(0.35, 0.3, run) * Math.max(0, -x));
+    const s = (x > 0 ? x * A * 0.75 : x * A) - 0.05;
+    armHang(o, sd, s, lerp(0.1, 0.2, run) + 0.08 * flap + 0.04 * Math.max(0, x), lerp(0.55, 1.1, run) + 0.25 * Math.max(0, -x));
   };
   arm('L', w); arm('R', -w);
 }
