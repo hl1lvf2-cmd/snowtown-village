@@ -466,6 +466,28 @@ body.touch #snack .sheet-head { padding-top: 8px; padding-bottom: 6px; }
 .chip.sky.live { background: linear-gradient(90deg, rgba(60, 200, 150, 0.45), rgba(140, 90, 230, 0.45)); color: #fff; animation: skyglow 2.4s ease-in-out infinite; }
 @keyframes skyglow { 50% { box-shadow: 0 0 14px rgba(140, 255, 210, 0.45); } }
 @media (orientation: portrait) and (max-width: 520px) { body.touch #chip-sky .sk-nm { display: none; } }
+#sledrun { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--brand-b, 84px) + 10px); z-index: 14; display: flex; align-items: baseline; gap: 10px; padding: 8px 16px; border-radius: 14px; pointer-events: none; white-space: nowrap; }
+#sledrun .sr-lbl { font-size: 12px; color: var(--muted); }
+#sr-time { font-family: var(--font-display); font-weight: 400; font-size: 30px; font-variant-numeric: tabular-nums; min-width: 3.4em; text-align: center; }
+#sr-info { font-size: 13px; color: #cfe3ff; }
+#sledrun.done { border-color: rgba(242, 193, 78, 0.7); box-shadow: 0 0 22px rgba(242, 193, 78, 0.35); }
+#sledrun.done #sr-time { color: #ffe9a8; }
+#fishui { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 14; width: min(400px, calc(100vw - 20px)); padding: 10px 12px; border-radius: 16px; display: grid; gap: 8px; }
+.fi-head { display: flex; align-items: center; gap: 8px; }
+.fi-head b { flex: 1; font-size: 15px; }
+#fishui[data-ph="bite"] .fi-head b { color: #ffd36e; animation: bpulse 0.5s ease-in-out infinite; }
+#fi-bar { position: relative; height: 34px; border-radius: 10px; background: linear-gradient(90deg, #0e3355, #164a78 50%, #0e3355); overflow: hidden; }
+#fi-zone { position: absolute; top: 3px; bottom: 3px; border-radius: 8px; background: rgba(120, 220, 150, 0.35); border: 2px solid rgba(150, 255, 180, 0.6); }
+#fi-zone.on { background: rgba(120, 240, 150, 0.6); }
+#fi-fish { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 20px; line-height: 1; pointer-events: none; }
+#fi-prog { height: 8px; border-radius: 5px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+#fi-fill { display: block; height: 100%; width: 35%; background: linear-gradient(90deg, #7fd3ff, #8affc1); }
+#fi-btn { height: 46px; font-size: 16px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#fishui[data-ph="bite"] #fi-btn { background: #ffb347; }
+body.touch #fishui { bottom: calc(196px + env(safe-area-inset-bottom)); }
+body.fishing #tbtns { display: none; }
+@media (orientation: landscape) and (max-height: 520px) { body.touch #fishui { left: auto; transform: none; right: calc(10px + env(safe-area-inset-right)); bottom: calc(64px + env(safe-area-inset-bottom)); width: min(330px, 42vw); } }
+#rank-list li.sec { font-size: 12px; color: var(--muted); padding: 10px 6px 4px; list-style: none; }
 .lbl-note { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
 .prop-rows { display: grid; gap: 6px; }
 .prop-row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -806,6 +828,16 @@ body.touch .keys.desk { display: none; }
       <div id="prompt" class="glass"></div>
     </div>
 
+    <div id="sledrun" class="glass" hidden aria-live="polite"><span class="sr-lbl">🛷 기록 경주</span><b id="sr-time">0.00</b><span id="sr-info"></span></div>
+    <div id="fishui" class="glass" hidden>
+      <div class="fi-head"><b id="fi-title">🎣 입질을 기다려요…</b><button class="btn sm" type="button" id="fi-stop">일어나기</button></div>
+      <div id="fi-game" hidden>
+        <div id="fi-bar"><i id="fi-zone"></i><span id="fi-fish">🐟</span></div>
+        <div id="fi-prog"><i id="fi-fill"></i></div>
+      </div>
+      <button class="btn primary" type="button" id="fi-btn">당기기</button>
+    </div>
+
     <div id="chat">
       <div id="chatlog" aria-live="polite"></div>
       <div class="chat-row glass">
@@ -841,6 +873,7 @@ body.touch .keys.desk { display: none; }
       <button type="button" role="tab" data-tab="height" aria-selected="false">키</button>
       <button type="button" role="tab" data-tab="builders" aria-selected="false">장인</button>
       <button type="button" role="tab" data-tab="fight" aria-selected="false">눈싸움</button>
+      <button type="button" role="tab" data-tab="rec" aria-selected="false">기록</button>
       <button type="button" role="tab" data-tab="hall" aria-selected="false">명예의 전당</button>
     </div>
     <p class="tab-note" id="rank-note"></p>
@@ -3162,6 +3195,321 @@ function setProps(av, pr) {
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.cwDone = true; } });
   u.head.add(g); u.propG = g;
 }
+/* ================================================================
+   썰매 기록 경주: 언덕을 315도 휘감아 내려가는 나선 코스. 출발 문 → 깃발 문 여섯 → 도착 문.
+   깃발 사이로 못 지나가면 +2초. 내 최고 기록은 눈사람 문서(rec)에 같이 저장해 마을 순위로 보여요
+   ================================================================ */
+const SR = (() => {
+  const span = 1.75 * Math.PI, r0 = 4.8, K = 15 / span, rr = th => r0 + th * K;
+  // θ 자리의 코스 한가운데 점·진행 방향(t)·바깥쪽(n)
+  const at = (th, off = 0) => {
+    const R = rr(th), c = Math.cos(th), s = Math.sin(th); let tx = K * c - R * s, tz = K * s + R * c; const tl = Math.hypot(tx, tz); tx /= tl; tz /= tl;
+    return { th, x: SLED.x + R * c + tz * off, z: SLED.z + R * s - tx * off, tx, tz, nx: tz, nz: -tx };
+  };
+  const gates = [0, 1, 2, 3, 4, 5].map(i => ({ ...at(0.15 + (span - 0.15) * (i + 1) / 7, i % 2 ? -0.8 : 0.8), hw: 1.5 }));
+  return { span, rr, at, K, spawn: at(-0.35), start: { ...at(0.15), hw: 3.4 }, gates, finish: { ...at(span), hw: 4.0 }, penalty: 2000, halfW: 1.5 };
+})();
+const inSledRun = (x, z, m = 0) => Math.hypot(x - SLED.x, z - SLED.z) < SR.rr(SR.span) + 2.6 + m;
+const RUN = { on: false, t0: 0, gate: 0, miss: 0, px: 0, pz: 0, still: 0, flags: [], showUntil: 0 };
+const fmtSec = ms => (ms / 1000).toFixed(2) + '초';
+// 선(문)을 앞쪽으로 지나갔으면 가로 위치를, 아니면 null
+function lineCross(L, px, pz, qx, qz) {
+  const s0 = (px - L.x) * L.tx + (pz - L.z) * L.tz, s1 = (qx - L.x) * L.tx + (qz - L.z) * L.tz;
+  return s0 < 0 && s1 >= 0 ? (qx - L.x) * L.nx + (qz - L.z) * L.nz : null;
+}
+function bannerMesh(w, h, draw) {
+  const c = makeCanvas(512, Math.round(512 * h / w)), t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const redraw = () => { const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); draw(g, c.width, c.height); t.needsUpdate = true; };
+  redraw(); try { document.fonts && document.fonts.ready.then(redraw); } catch { /* 무시 */ }
+  const m = toonMat({ map: t }), grp = new THREE.Group();
+  for (const s of [1, -1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); p.rotation.y = s * Math.PI / 2; p.position.x = s * 0.035; p.customDepthMaterial = CURVE_DEPTH; grp.add(p); }
+  return grp;
+}
+function sledArch(L, title, sub, bg, fg) {
+  const half = L.hw, posts = [-half, half].map(o => { const x = L.x + L.nx * o, z = L.z + L.nz * o; return { x, z, y: heightAt(x, z) }; });
+  const top = Math.max(...posts.map(p => p.y)) + 2.45;
+  for (const p of posts) {
+    const h = top - p.y + 0.15;
+    const post = mesh(GEO.cyl, MAT.woodDark, p.x, p.y + h / 2, p.z, 0.09, h, 0.09); post.castShadow = true; scene.add(post);
+    scene.add(mesh(GEO.sphereLo, MAT.roofSnow, p.x, top + 0.2, p.z, 0.16, 0.1, 0.16));
+    addCollider({ x: p.x, z: p.z, r: 0.18, t: 'flag' });
+  }
+  const b = bannerMesh(half * 2 + 0.3, 0.62, (g, W, H) => {
+    if (bg === 'check') { const s = H / 4; for (let y = 0; y < 4; y++) for (let k = 0; k * s < W; k++) { g.fillStyle = (k + y) % 2 ? '#1b1d22' : '#ffffff'; g.fillRect(k * s, y * s, s, s); } g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(W * 0.3, H * 0.12, W * 0.4, H * 0.76); }
+    else { g.fillStyle = bg; g.fillRect(0, 0, W, H); }
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `${Math.round(H * 0.5)}px Jua, "IBM Plex Sans KR", sans-serif`; g.fillText(title, W / 2, H * (sub ? 0.4 : 0.52));
+    if (sub) { g.font = `${Math.round(H * 0.2)}px "IBM Plex Sans KR", sans-serif`; g.fillText(sub, W / 2, H * 0.8); }
+  });
+  b.position.set(L.x, top, L.z); b.rotation.y = Math.atan2(-L.tz, L.tx); scene.add(b);
+}
+{
+  // 다져진 썰매길: 눈보다 살짝 푸른 띠
+  const pos = [], idx = [], n = 140, th0 = -0.6, th1 = SR.span + 0.5;
+  for (let i = 0; i <= n; i++) {
+    const p = SR.at(th0 + (th1 - th0) * i / n);
+    for (const o of [-SR.halfW, SR.halfW]) { const x = p.x + p.nx * o, z = p.z + p.nz * o; pos.push(x, heightAt(x, z) + 0.035, z); }
+    if (i < n) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const strip = new THREE.Mesh(g, toonMat({ color: '#d3e4f7', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); strip.receiveShadow = true; strip.customDepthMaterial = CURVE_DEPTH; scene.add(strip);
+  sledArch(SR.start, '출발', '썰매 기록 경주 · 깃발 사이로!', '#2f6fe0', '#ffffff');
+  sledArch(SR.finish, '도착', '', 'check', '#1b1d22');
+  const flagGeo = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.lineTo(0.5, -0.17); s.lineTo(0, -0.34); s.closePath(); return new THREE.ShapeGeometry(s); })();
+  SR.gates.forEach((G, i) => {
+    const col = i % 2 ? '#2f6fe0' : '#e0283c', set = [];
+    for (const sd of [-1, 1]) {
+      const x = G.x + G.nx * G.hw * sd, z = G.z + G.nz * G.hw * sd, y = heightAt(x, z);
+      const pole = mesh(GEO.cyl, MAT.white, x, y + 0.7, z, 0.035, 1.4, 0.035); pole.castShadow = true; scene.add(pole);
+      const f = new THREE.Mesh(flagGeo, toonMat({ color: col, side: THREE.DoubleSide })); f.position.set(x, y + 1.38, z);
+      f.rotation.y = sd > 0 ? Math.atan2(-G.tx, -G.tz) : Math.atan2(G.tx, G.tz); f.customDepthMaterial = CURVE_DEPTH; scene.add(f);
+      addCollider({ x, z, r: 0.12, t: 'flag' }); set.push(f);
+    }
+    RUN.flags.push({ set, col });
+  });
+}
+function srHud(time, info, done) {
+  const el = $('#sledrun'); el.hidden = false; el.classList.toggle('done', !!done);
+  $('#sr-time').textContent = time; $('#sr-info').textContent = info;
+}
+function srFlags(i, col) { const f = RUN.flags[i]; if (f) for (const m of f.set) m.material.color.set(col || f.col); }
+function cancelRun(msg) {
+  if (!RUN.on) return;
+  RUN.on = false; RUN.showUntil = 0; $('#sledrun').hidden = true;
+  for (let i = 0; i < RUN.flags.length; i++) srFlags(i);
+  if (msg) toast(msg);
+}
+function updateSledRun(dt) {
+  if (RUN.showUntil && clock > RUN.showUntil) { RUN.showUntil = 0; $('#sledrun').hidden = true; }
+  if (!P.sled) { if (RUN.on) cancelRun('썰매에서 내려서 기록 경주를 멈췄어요.'); return; }
+  const px = RUN.px, pz = RUN.pz, x = P.pos.x, z = P.pos.z; RUN.px = x; RUN.pz = z;
+  if (!RUN.on) {
+    const lat = lineCross(SR.start, px, pz, x, z);
+    if (lat !== null && Math.abs(lat) < SR.start.hw) {
+      RUN.on = true; RUN.t0 = clock; RUN.gate = 0; RUN.miss = 0; RUN.still = 0; RUN.showUntil = 0;
+      for (let i = 0; i < RUN.flags.length; i++) srFlags(i);
+      sfx('bell'); srHud('0.00', `깃발 0/${SR.gates.length}`);
+    }
+    return;
+  }
+  const G = SR.gates[RUN.gate];
+  if (G) {
+    const lat = lineCross(G, px, pz, x, z);
+    if (lat !== null && Math.abs(lat) < 7) {
+      if (Math.abs(lat) <= G.hw) { srFlags(RUN.gate, '#f2c230'); sfx('pop'); }
+      else { RUN.miss++; srFlags(RUN.gate, '#6b7280'); toast(`깃발을 놓쳤어요 · +${SR.penalty / 1000}초`, [], 1800); }
+      RUN.gate++;
+    }
+  }
+  // 게임 시간으로 재요: 느린 기기에서 화면이 느려져도 기록은 공정하게
+  const el = (clock - RUN.t0) * 1000 + RUN.miss * SR.penalty;
+  srHud((el / 1000).toFixed(2), `깃발 ${RUN.gate}/${SR.gates.length}${RUN.miss ? ` · +${RUN.miss * SR.penalty / 1000}초` : ''}`);
+  if (!G) {
+    const lat = lineCross(SR.finish, px, pz, x, z);
+    if (lat !== null && Math.abs(lat) < 7) { if (Math.abs(lat) <= SR.finish.hw) finishRun(el); else cancelRun('도착 문 밖으로 지나가서 기록이 없어요.'); return; }
+  }
+  RUN.still = Math.abs(P.sledV) < 0.4 ? RUN.still + dt : 0;
+  if (!inSledRun(x, z, 3) || el > 60000 || RUN.still > 3) cancelRun('코스를 벗어나서 기록 경주를 멈췄어요. 다시 보관대에서 출발해요.');
+}
+function finishRun(ms) {
+  ms = Math.round(ms); RUN.on = false; RUN.showUntil = clock + 6;
+  const prev = myRec.sl, best = !prev || ms < prev;
+  if (best) { myRec.sl = ms; saveRec(); }
+  const rank = recLeaders('sl').findIndex(e => e.me) + 1;
+  srHud(fmtSec(ms), `${best ? (prev ? '🎉 내 최고 기록!' : '🎉 첫 기록!') : `내 최고 ${fmtSec(prev)}`}${rank ? ` · 마을 ${rank}위` : ''}`, true);
+  burst(P.pos.x, P.pos.y + 1.6, P.pos.z, 26, ['#f2c14e', '#ffffff', '#7fd3ff', '#ff7aa8'], 2.4, 3.6, 0.07, 1.2);
+  sfx('chime'); mission('sledrun');
+  toast(`🛷 도착! ${fmtSec(ms)}${RUN.miss ? ` (깃발 놓침 +${RUN.miss * SR.penalty / 1000}초)` : ''}${best ? ' · 내 최고 기록이에요' : ''}`, [{ label: '순위 보기', fn: () => openRank('rec') }], 5200);
+  if (best) myRc = { n: ++counters.rc, k: 'sl', ms, rk: rank };
+}
+
+/* ================================================================
+   얼음낚시: 연못 가장자리 얼음 구멍 넷. 앉아서 기다리다 찌가 쏙 들어가면 당기고,
+   물고기가 초록 칸 안에 있도록 꾹 눌러 감아요. 가장 큰 물고기는 마을 기록이 돼요
+   ================================================================ */
+const FISH = {
+  smelt: { nm: '빙어', ic: '🐟', w: 46, min: 7, max: 15, col: '#c9dcea', diff: 0.65 },
+  trout: { nm: '송어', ic: '🐟', w: 22, min: 25, max: 48, col: '#c99088', diff: 1.0 },
+  cherry: { nm: '산천어', ic: '🐠', w: 18, min: 18, max: 34, col: '#9fb4c9', diff: 1.12 },
+  char: { nm: '곤들매기', ic: '🐟', w: 7, min: 30, max: 56, col: '#8f9d6c', diff: 1.32 },
+  golden: { nm: '황금 산천어', ic: '✨', w: 2, min: 32, max: 46, col: '#f2c230', diff: 1.55, gold: true },
+  boot: { nm: '눈 장화', ic: '🥾', w: 5, min: 24, max: 27, col: '#7d5135', diff: 0.45, junk: true },
+};
+const HOLES = [0.75, 2.4, 3.95, 5.45].map(a => {
+  const x = POND.x + Math.cos(a) * 8.4, z = POND.z + Math.sin(a) * 8.4, sx = POND.x + Math.cos(a) * 9.55, sz = POND.z + Math.sin(a) * 9.55;
+  return { a, x, z, sx, sz, ry: Math.atan2(x - sx, z - sz) };
+});
+const FI = { on: false, h: -1, ph: 'wait', biteAt: 0, end: 0, hold: false, bHold: false, tHold: false, k: '', mm: 0, pos: 0.36, vel: 0, zone: 0.3, fx: 0.5, ft: 0.5, nextT: 0, prog: 0.35, jump: null };
+{
+  const ice = ICE_Y + 0.012, waterM = toonMat({ color: '#0e3355', emissive: '#06182b', emissiveIntensity: 0.4 });
+  const holeGeo = new THREE.CircleGeometry(0.42, 28).rotateX(-Math.PI / 2), bobR = mat('#e0283c'), bobW = mat('#ffffff');
+  for (const h of HOLES) {
+    const w = new THREE.Mesh(holeGeo, waterM); w.position.set(h.x, ice, h.z); w.receiveShadow = true; scene.add(w);
+    for (let k = 0; k < 9; k++) { const an = k / 9 * TAU + h.a; scene.add(mesh(GEO.ball[k % 3], MAT.snow, h.x + Math.cos(an) * 0.5, ice + 0.03, h.z + Math.sin(an) * 0.5, 0.11, 0.06, 0.11)); }
+    // 앉는 나무 의자(모닥불 통나무와 같은 높이)
+    const st = new THREE.Group(); st.position.set(h.sx, groundY(h.sx, h.sz), h.sz); st.rotation.y = h.ry; scene.add(st);
+    st.add(mesh(GEO.cyl, MAT.wood, 0, 0.23, -0.06, 0.2, 0.46, 0.2)); st.add(mesh(GEO.cyl, mat('#3a6fd8'), 0, 0.48, -0.06, 0.23, 0.05, 0.23));
+    // 낚싯대 받침과 대, 줄, 찌
+    const rx = Math.cos(h.ry) * 0.42, rz = -Math.sin(h.ry) * 0.42, base = new THREE.Vector3(h.sx + rx, groundY(h.sx, h.sz), h.sz + rz);
+    scene.add(mesh(GEO.cyl, MAT.woodDark, base.x, base.y + 0.2, base.z, 0.03, 0.4, 0.03));
+    const tip = new THREE.Vector3(h.x + rx * 0.15, base.y + 0.95, h.z + rz * 0.15), rodPiv = new THREE.Group(); rodPiv.position.set(base.x, base.y + 0.38, base.z); scene.add(rodPiv);
+    const len = tip.distanceTo(rodPiv.position), rod = mesh(pgeo('fishRod', () => new THREE.CylinderGeometry(0.008, 0.016, 1, 6).translate(0, 0.5, 0)), mat('#2b2b33'), 0, 0, 0, 1, len, 1);
+    rodPiv.add(rod); rodPiv.lookAt(tip); rod.rotation.x = Math.PI / 2;
+    rodPiv.add(mesh(GEO.cyl, mat('#d0a050'), 0, 0, 0.12, 0.03, 0.08, 0.03)).rotation.x = Math.PI / 2;
+    const bob = new THREE.Group(); bob.position.set(h.x, ice + 0.04, h.z); scene.add(bob);
+    bob.add(mesh(GEO.sphereLo, bobR, 0, 0.02, 0, 0.05, 0.04, 0.05)); bob.add(mesh(GEO.sphereLo, bobW, 0, -0.015, 0, 0.045, 0.035, 0.045));
+    const line = new THREE.Mesh(pgeo('fishLine', () => new THREE.CylinderGeometry(0.0035, 0.0035, 1, 4).translate(0, 0.5, 0)), mat('#f4f6fb')); scene.add(line);
+    Object.assign(h, { bob, line, rodPiv, tipBase: tip.clone(), ice });
+  }
+}
+const _fl = new THREE.Vector3(), _tp = new THREE.Vector3();
+function fishRig(h, bend, bobY, shake) {
+  h.rodPiv.rotation.z = 0; h.rodPiv.lookAt(h.tipBase); h.rodPiv.rotateX(bend);
+  h.bob.position.set(h.x + (shake ? shake * Math.sin(clock * 37) : 0), h.ice + bobY, h.z + (shake ? shake * Math.cos(clock * 31) : 0));
+  _tp.set(0, 0, 1).applyQuaternion(h.rodPiv.quaternion).multiplyScalar(h.tipBase.distanceTo(h.rodPiv.position)).add(h.rodPiv.position);
+  _fl.copy(h.bob.position).add(new THREE.Vector3(0, 0.05, 0)).sub(_tp);
+  h.line.position.copy(_tp); h.line.scale.set(1, _fl.length(), 1); h.line.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), _fl.normalize());
+}
+for (const h of HOLES) fishRig(h, 0, 0.04, 0);
+const holeTaken = i => { const h = HOLES[i]; for (const pe of peers.values()) if (pe.entered && pe.st === 'sit' && Math.hypot(pe.pos.x - h.sx, pe.pos.z - h.sz) < 0.5) return true; return false; };
+function fishContext() {
+  if (P.food || rolling || P.sled) return null;
+  for (let i = 0; i < HOLES.length; i++) {
+    const h = HOLES[i];
+    if (Math.hypot(P.pos.x - h.sx, P.pos.z - h.sz) < 1.4 || Math.hypot(P.pos.x - h.x, P.pos.z - h.z) < 1.0) {
+      if (holeTaken(i)) return { kind: 'none', text: '친구가 낚시 중인 구멍이에요', dim: '다른 얼음 구멍을 찾아봐요' };
+      return { kind: 'fish', key: 'E', text: '🎣 얼음낚시', dim: '앉아서 찌가 쏙 들어가면 당겨요', h: i };
+    }
+  }
+  return null;
+}
+function fishingContext() {
+  if (FI.ph === 'bite') return { kind: 'fishHook', key: 'E', text: '❗ 지금 당겨요!' };
+  if (FI.ph === 'reel') return { kind: 'fishReel', key: 'E', text: '꾹 눌러 감기', dim: '물고기가 초록 칸 안에 있게' };
+  if (FI.ph === 'caught') return { kind: 'none', text: '낚았어요!' };
+  return { kind: 'fishWait', key: 'E', text: '입질을 기다리는 중…', dim: '움직이면 일어나요' };
+}
+function pickFish() {
+  const ks = Object.keys(FISH), tot = ks.reduce((s, k) => s + FISH[k].w, 0); let r = Math.random() * tot;
+  for (const k of ks) { r -= FISH[k].w; if (r <= 0) return k; }
+  return 'smelt';
+}
+function startFishing(i) {
+  const h = HOLES[i]; if (!h || holeTaken(i)) return;
+  if (P.sit != null) standUp();
+  FI.on = true; FI.h = i; FI.ph = 'wait'; FI.biteAt = clock + 2.5 + Math.random() * 4.5; FI.jump = null;
+  P.fish = true; P.vel.set(0, 0, 0); P.pos.set(h.sx, groundY(h.sx, h.sz), h.sz); P.ry = h.ry; P.anim = 'sit';
+  CAM.yaw = h.ry + Math.PI + 0.95; CAM.pitch = 0.55; CAM.dist = clamp(CAM.dist, 4.2, 5.5); CAM.snap = true;
+  $('#fishui').hidden = false; document.body.classList.add('fishing'); fishUi(); sfx('pop');
+  if (!LS.get('fishTold', false)) { LS.set('fishTold', true); toast('찌가 쏙 들어가면 당기기(E)! 그다음엔 꾹 눌러 감아서 물고기를 초록 칸 안에 두면 올라와요.', [], 6500); }
+}
+function stopFishing() {
+  if (!FI.on) return;
+  const h = HOLES[FI.h]; FI.on = false; P.fish = false; P.anim = 'idle';
+  if (h) { fishRig(h, 0, 0.04, 0); P.pos.x += Math.sin(h.ry) * -0.45; P.pos.z += Math.cos(h.ry) * -0.45; }
+  $('#fishui').hidden = true; document.body.classList.remove('fishing'); FI.bHold = FI.tHold = false;
+}
+function fishPress() {
+  if (!FI.on) return;
+  if (FI.ph === 'bite') {
+    const f = FISH[FI.k];
+    FI.ph = 'reel'; FI.prog = 0.35; FI.pos = 0.36; FI.vel = 0; FI.fx = 0.5; FI.ft = 0.5; FI.nextT = clock + 0.5; FI.zone = clamp(0.32 - f.diff * 0.05, 0.2, 0.3);
+    sfx('pop'); fishUi();
+  } else if (FI.ph === 'wait') { FI.biteAt = Math.max(FI.biteAt, clock + 1.5); toast('아직 입질이 없어요. 찌가 쏙 들어갈 때 당겨요!', [], 1800); }
+}
+function fishUi() {
+  const t = { wait: '🎣 입질을 기다려요…', bite: '❗ 지금 당겨요!', reel: '꾹 눌러 감아요', caught: '낚았어요!' }[FI.ph];
+  $('#fi-title').textContent = t; $('#fishui').dataset.ph = FI.ph;
+  $('#fi-game').hidden = FI.ph !== 'reel';
+  $('#fi-btn').textContent = FI.ph === 'reel' ? '꾹 눌러 감기' : FI.ph === 'bite' ? '당기기!' : '당기기';
+}
+function updateFishing(dt) {
+  const h = HOLES[FI.h]; if (!h) { stopFishing(); return; }
+  FI.hold = FI.bHold || FI.tHold || keys.has('KeyE') || keys.has('Space');
+  if (FI.ph === 'wait') {
+    const nib = FI.biteAt - clock < 1.2 && Math.sin(clock * 9) > 0.7 ? 0.012 : 0;
+    fishRig(h, 0, 0.04 + Math.sin(clock * 2.2) * 0.008 - nib, 0);
+    if (clock > FI.biteAt) { FI.ph = 'bite'; FI.end = clock + 1.15; FI.k = pickFish(); sfx('pop'); try { navigator.vibrate && navigator.vibrate(70); } catch { /* 무시 */ } fishUi(); }
+  } else if (FI.ph === 'bite') {
+    fishRig(h, 0.18 + Math.sin(clock * 24) * 0.05, -0.05 - Math.abs(Math.sin(clock * 20)) * 0.03, 0.01);
+    if (clock > FI.end) { FI.ph = 'wait'; FI.biteAt = clock + 2 + Math.random() * 4; toast('앗, 놓쳤어요. 다시 기다려요.', [], 1600); fishUi(); }
+  } else if (FI.ph === 'reel') {
+    const f = FISH[FI.k];
+    if (clock > FI.nextT) { FI.ft = clamp(FI.fx + (Math.random() - 0.5) * (0.5 + f.diff * 0.35), 0.03, 0.97); FI.nextT = clock + (0.35 + Math.random() * 0.9) / f.diff; }
+    FI.fx += clamp(FI.ft - FI.fx, -1, 1) * Math.min(1, dt * (1.6 + f.diff * 1.6));
+    FI.vel = clamp(FI.vel + (FI.hold ? 2.6 : -2.3) * dt, -1.1, 1.1);
+    FI.pos += FI.vel * dt;
+    if (FI.pos < 0) { FI.pos = 0; FI.vel = Math.max(0, FI.vel) * 0.3; }
+    if (FI.pos > 1 - FI.zone) { FI.pos = 1 - FI.zone; FI.vel = Math.min(0, FI.vel) * 0.3; }
+    const inZone = FI.fx >= FI.pos && FI.fx <= FI.pos + FI.zone;
+    FI.prog = clamp(FI.prog + (inZone ? 0.3 : -0.2 * f.diff) * dt, 0, 1);
+    $('#fi-zone').style.left = (FI.pos * 100) + '%'; $('#fi-zone').style.width = (FI.zone * 100) + '%'; $('#fi-zone').classList.toggle('on', inZone);
+    $('#fi-fish').style.left = (FI.fx * 100) + '%'; $('#fi-fish').textContent = f.junk ? '🥾' : f.gold ? '✨' : '🐟';
+    $('#fi-fill').style.width = (FI.prog * 100) + '%';
+    fishRig(h, 0.22 + Math.sin(clock * 14) * 0.06 * (inZone ? 1 : 1.6), -0.03 + Math.sin(clock * 11) * 0.02, 0.03);
+    if (FI.prog >= 1) fishCaught(h);
+    else if (FI.prog <= 0) { FI.ph = 'wait'; FI.biteAt = clock + 2 + Math.random() * 4; toast(f.junk ? '뭔가 무거운 게 빠져나갔어요.' : '물고기가 줄을 끊고 도망갔어요. 다시 해 봐요!', [], 2200); fishUi(); }
+  } else if (FI.ph === 'caught') {
+    fishRig(h, 0, 0.04, 0);
+    if (clock > FI.end) { FI.ph = 'wait'; FI.biteAt = clock + 2.5 + Math.random() * 4.5; fishUi(); }
+  }
+  updateFishJump(dt);
+}
+function fishCaught(h) {
+  const f = FISH[FI.k], mm = Math.round((f.min + Math.pow(Math.random(), 1.7) * (f.max - f.min)) * 10);
+  FI.ph = 'caught'; FI.end = clock + 2.2; FI.mm = mm; fishUi();
+  makeFishJump(h, FI.k, mm);
+  burst(h.x, h.ice + 0.2, h.z, 20, ['#ffffff', '#bfe3ff', '#7fc4f0'], 2.2, 3.4, 0.06, 0.9);
+  if (f.junk) { toast('🥾 앗, 누가 빠뜨린 눈 장화예요… 그래도 건졌어요!', [], 3600); sfx('bump'); return; }
+  const book = LS.get('fishbook', {}) || {}; book[FI.k] = (book[FI.k] | 0) + 1; LS.set('fishbook', book);
+  myRec.fn++; const best = mm > myRec.fb; if (best) { myRec.fb = mm; myRec.fk = FI.k; }
+  saveRec(); mission('fish');
+  const rank = best ? recLeaders('fb').findIndex(e => e.me) + 1 : 0;
+  toast(`${f.ic} ${f.nm} ${(mm / 10).toFixed(1)}cm 낚았어요!${best ? ` · 🏆 내 최고${rank ? ` (마을 ${rank}위)` : ''}` : ''} · 지금까지 ${myRec.fn}마리`, [{ label: '순위 보기', fn: () => openRank('rec') }], 4800);
+  sfx('chime');
+  if (f.gold || (best && rank === 1)) myRc = { n: ++counters.rc, k: 'fish', fk: FI.k, mm, rk: rank };
+}
+function makeFishJump(h, k, mm) {
+  const f = FISH[k], g = new THREE.Group(), s = clamp(mm / 300, 0.35, 1.9), m = f.gold ? MAT.gold : mat(f.col);
+  if (f.junk) { g.add(mesh(GEO.box, MAT.boot, 0, 0.1, 0, 0.16, 0.24, 0.14)); g.add(mesh(GEO.box, MAT.boot, 0, -0.02, 0.07, 0.16, 0.1, 0.28)); }
+  else {
+    g.add(mesh(GEO.sphere, m, 0, 0, 0, 0.07 * s, 0.09 * s, 0.24 * s));
+    const tail = mesh(GEO.cone4, m, 0, 0, -0.27 * s, 0.1 * s, 0.14 * s, 0.03 * s); tail.rotation.x = -Math.PI / 2; g.add(tail);
+    for (const sx of [-1, 1]) g.add(mesh(GEO.sphereLo, MAT.black, sx * 0.05 * s, 0.03 * s, 0.17 * s, 0.015 * s));
+  }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g);
+  if (FI.jump) scene.remove(FI.jump.g);
+  FI.jump = { g, t: 0, h };
+}
+// 구멍에서 펄쩍 뛰어올라 내 앞으로 포물선을 그리며 날아와 품에 쏙
+function updateFishJump(dt) {
+  const j = FI.jump; if (!j) return;
+  j.t += dt; const k = j.t / 1.25;
+  if (k >= 1) { burst(j.g.position.x, j.g.position.y, j.g.position.z, 10, ['#ffffff', '#fff3c4'], 1.2, 1.5, 0.05, 0.6); scene.remove(j.g); FI.jump = null; return; }
+  const tx = lerp(j.h.x, P.pos.x, 0.75), tz = lerp(j.h.z, P.pos.z, 0.75);
+  j.g.position.set(lerp(j.h.x, tx, k), j.h.ice + 0.1 + 4 * 1.25 * k * (1 - k) + k * 0.75, lerp(j.h.z, tz, k));
+  j.g.rotation.set(Math.sin(j.t * 16) * 0.35, j.t * 4, Math.sin(j.t * 9) * 0.3);
+}
+
+/* ---------- 기록: 내 문서(snowmen/내아이디)의 rec 칸에 같이 저장 ---------- */
+function cleanRec(r) {
+  r = r && typeof r === 'object' ? r : {};
+  return { sl: isNum(r.sl) && r.sl >= 1500 && r.sl < 600000 ? Math.round(r.sl) : 0, fb: isNum(r.fb) ? clamp(Math.round(r.fb), 0, 1200) : 0, fk: typeof r.fk === 'string' && hasKey(FISH, r.fk) && !FISH[r.fk].junk ? r.fk : '', fn: isNum(r.fn) ? clamp(Math.round(r.fn), 0, 99999) : 0 };
+}
+const mergeRec = (a, b) => ({ sl: a.sl && b.sl ? Math.min(a.sl, b.sl) : a.sl || b.sl, fb: Math.max(a.fb, b.fb), fk: a.fb >= b.fb ? a.fk : b.fk, fn: Math.max(a.fn, b.fn) });
+let myRec = cleanRec(LS.get('rec', null)), myRc = null;
+function saveRec() { LS.set('rec', myRec); if (NET.mode === 'online' && NET.canSave) saveMine(); updateRecSigns(); renderRank(); }
+function recLeaders(kind) {
+  const m = new Map();
+  for (const d of rawSnow) if (d.rec && d.rec[kind] && d.uid !== NET.uid && !isBanned(d.uid)) m.set(d.uid, { uid: d.uid, nk: clean(d.nk) || uidNick(d.uid) || '친구', rec: d.rec });
+  if (myRec[kind]) m.set('me', { uid: NET.uid || 'me', nk: nick || '나', rec: myRec, me: true });
+  return [...m.values()].sort(kind === 'sl' ? (a, b) => a.rec.sl - b.rec.sl : (a, b) => b.rec.fb - a.rec.fb);
+}
+function updateRecSigns() {
+  const sl = recLeaders('sl')[0], fb = recLeaders('fb')[0];
+  const t1 = sl ? `🛷 썰매 언덕 · 최고 ${fmtSec(sl.rec.sl)} ${sl.nk}` : '썰매 언덕 · E로 타기', t2 = fb ? `🎣 얼음낚시 · 최고 ${FISH[fb.rec.fk] ? FISH[fb.rec.fk].nm : ''} ${(fb.rec.fb / 10).toFixed(1)}cm ${fb.nk}` : '🎣 얼음낚시 · 구멍 옆 의자에서 E';
+  for (const sg of SIGNS) { const want = sg.rec === 'sl' ? t1 : sg.rec === 'fb' ? t2 : null; if (want && sg.text !== want) { sg.text = want; setText(sg.lb, 'nm', sg.lb.nmText, want); } }
+}
 const RING_GEO = new THREE.TorusGeometry(0.62, 0.06, 6, 28);
 function setTeamRing(av, tm) {
   const u = av.userData;
@@ -3676,7 +4024,7 @@ const SM = new Map();
 const peers = new Map();
 let rankLikes = [], rankHeight = [], rankBuilders = [], top3 = [];
 let myScore = 0;
-let counters = { ch: 0, em: 0, th: 0, gv: 0, ht: 0, ann: 0, pg: 0 };
+let counters = { ch: 0, em: 0, th: 0, gv: 0, ht: 0, ann: 0, pg: 0, rc: 0 };
 let myChat = null, myEmote = null, myGive = null, myHit = null, myAnn = null, myPing = null;
 const recentThrows = [];
 let clock = 0;
@@ -3896,7 +4244,7 @@ let myWrite = null, myWritePending = false;
 function saveMine() {
   if (!NET.db || !NET.uid) return Promise.resolve(false);
   if (myWrite) { myWritePending = true; return myWrite; }
-  myWrite = NET.db.doc('snowmen/' + NET.uid).set({ nk: nick, c: colorIdx, items: myItems.slice(-MAX_ITEMS), w: ARN.wins, t: Date.now() })
+  myWrite = NET.db.doc('snowmen/' + NET.uid).set({ nk: nick, c: colorIdx, items: myItems.slice(-MAX_ITEMS), w: ARN.wins, rec: myRec, t: Date.now() })
     .then(() => true, err => {
       if (err && err.code === 'invalid_argument') { NET.canSave = false; updateChips(); toast('이 페이지에 저장할 권한이 없어서, 눈사람은 접속해 있는 동안만 보여요.'); }
       else if (err && err.code === 'quota_exceeded') toast('마을 저장 공간이 가득 찼어요. 오래된 눈사람을 허물어 주세요.');
@@ -3952,7 +4300,7 @@ function subscribeDb() {
   const docsOf = snap => snap.docs.filter(x => x.exists).map(x => ({ id: x.id, d: x.data() || {} }));
   db.collection('snowmen').onSnapshot(snap => {
     if (!snap.metadata.fromCache) { clearTimeout(timer); NET.dbLoaded = true; NET.note = ''; loaded.snow = true; }
-    rawSnow = docsOf(snap).map(({ id, d }) => ({ uid: id, nk: str(d.nk, 12), c: clamp(Math.round(isNum(d.c) ? d.c : 0), 0, 7), w: isNum(d.w) ? clamp(Math.round(d.w), 0, 9999) : 0, items: Array.isArray(d.items) ? d.items.slice(0, MAX_ITEMS).map(cleanItem).filter(Boolean) : [] }));
+    rawSnow = docsOf(snap).map(({ id, d }) => ({ uid: id, nk: str(d.nk, 12), c: clamp(Math.round(isNum(d.c) ? d.c : 0), 0, 7), w: isNum(d.w) ? clamp(Math.round(d.w), 0, 9999) : 0, rec: cleanRec(d.rec), items: Array.isArray(d.items) ? d.items.slice(0, MAX_ITEMS).map(cleanItem).filter(Boolean) : [] }));
     ingestSnow(); updateChips(); maybeNews();
   }, () => { clearTimeout(timer); NET.note = '눈사람 목록을 불러오지 못했어요'; updateChips(); });
   if (NET.isOwner) db.collection('reports').onSnapshot(snap => {
@@ -4017,6 +4365,8 @@ function ingestSnow() {
   dbSnow = rawSnow.filter(d => !isBanned(d.uid)).map(d => ({ ...d, nk: clean(d.nk), items: d.items.map(it => ({ ...it, nm: clean(it.nm), ms: clean(it.ms) })) }));
   const mine = rawSnow.find(x => x.uid === NET.uid);
   if (!myWrite) { myItems = mine ? mine.items : []; if (mine) ARN.wins = Math.max(ARN.wins, mine.w); }
+  if (mine && mine.rec) { const mr = mergeRec(myRec, mine.rec); if (JSON.stringify(mr) !== JSON.stringify(myRec)) { myRec = mr; LS.set('rec', myRec); } }
+  updateRecSigns();
   scheduleReconcile();
 }
 function ingestNotes() {
@@ -4214,6 +4564,11 @@ function upsertPeer(p) {
     } else toast(`명중! ${pe.nick}님을 맞혔어요.`);
   });
   ev('ann', v => { const nm = str(v.nm, 16); const k = typeof v.k === 'string' ? v.k.slice(0, 120) : ''; toast(`${pe.nick}님이 「${nm}」 눈사람을 완성했어요!`, k ? [{ label: '보러 가기', fn: () => visit(k) }] : []); chatLog('', `${pe.nick}님이 「${nm}」 완성`, null, true); });
+  ev('rc', v => {
+    const rk = isNum(v.rk) && v.rk === 1 ? ' · 마을 1위!' : '';
+    if (v.k === 'sl' && isNum(v.ms) && v.ms >= 1500) toast(`🛷 ${pe.nick}님 썰매 기록 ${fmtSec(v.ms)}${rk}`, [{ label: '순위 보기', fn: () => openRank('rec') }], 4200);
+    else if (v.k === 'fish' && hasKey(FISH, v.fk) && isNum(v.mm)) toast(`🎣 ${pe.nick}님이 ${FISH[v.fk].nm} ${(clamp(v.mm, 0, 1200) / 10).toFixed(1)}cm를 낚았어요!${rk}`, [{ label: '순위 보기', fn: () => openRank('rec') }], 4200);
+  });
   ev('pg', v => { const k = typeof v.k === 'string' ? v.k.slice(0, 120) : ''; const nm = str(v.nm, 16); toast(`${pe.nick}님이 「${nm}」 보러 오래요.`, [{ label: '보러 가기', fn: () => visit(k) }], 7000); });
   if (Array.isArray(pr.th)) {
     const last = pe.seen.th ?? 0; let mx = last;
@@ -4322,9 +4677,9 @@ function startSled() {
   mission('sled');
   if (rolling) dropRolling();
   P.sled = true; P.sledV = 0.5; P.sledT0 = clock;
-  P.ry = Math.atan2(P.pos.x - SLED.x, P.pos.z - SLED.z);
-  CAM.yaw = P.ry + Math.PI; CAM.pitch = 0.3;
-  toast('썰매 출발! W로 밀고 A/D로 방향을 바꿔요. E로 내려요.');
+  P.pos.set(SR.spawn.x, 0, SR.spawn.z); P.pos.y = groundY(P.pos.x, P.pos.z); P.ry = Math.atan2(SR.spawn.tx, SR.spawn.tz); RUN.px = P.pos.x; RUN.pz = P.pos.z;
+  CAM.yaw = P.ry + Math.PI; CAM.pitch = 0.3; CAM.snap = true;
+  toast(myRec.sl ? `썰매 출발! 언덕을 휘감는 길을 따라 깃발 사이로. 내 최고 ${fmtSec(myRec.sl)}` : '썰매 출발! 출발 문을 지나면 기록을 재요. 푸른 썰매길을 따라 깃발 사이로, W로 계속 밀면 빨라요. E로 내려요.', [], 4500);
 }
 function stopSled() { P.sled = false; P.sledV = 0; P.vel.set(0, 0, 0); }
 function updateSled(dt, ix, iz) {
@@ -4358,7 +4713,12 @@ function updatePlayer(dt) {
     ix += joy.x; iz += joy.y;
   }
   let len = Math.hypot(ix, iz); if (len > 1) { ix /= len; iz /= len; len = 1; }
-  if (P.sled) { updateSled(dt, ix, iz); return; }
+  if (P.sled) { updateSled(dt, ix, iz); updateSledRun(dt); return; }
+  updateSledRun(dt);
+  if (P.fish) {
+    if (len > 0.35 && FI.ph !== 'reel') stopFishing();
+    else { const h = HOLES[FI.h]; P.vel.set(0, 0, 0); P.vy = 0; P.grounded = true; P.pos.set(h.sx, groundY(h.sx, h.sz), h.sz); P.ry = dampAngle(P.ry, h.ry, 10, dt); P.anim = 'sit'; updateFishing(dt); return; }
+  }
   if (P.sit != null) {
     const st = CAMP_L.seats[P.sit];
     if (!st || Math.hypot(P.pos.x - st.x, P.pos.z - st.z) > 0.3) P.sit = null;   // 다른 곳으로 옮겨졌으면(찾아가기 등) 앉은 걸 풂
@@ -4462,7 +4822,7 @@ function updateFood() {
     toast(`${f.nm}${f.o} ${f.ate} 😋 몸이 따끈따끈해졌어요`); sfx('chime'); mission('snack');
   }
 }
-function jump() { if (P.sit != null) { standUp(); return; } if (P.sled) { stopSled(); return; } if (mode === 'play' && P.grounded && !rolling && clock > ARN.stunUntil) { P.grounded = false; P.vy = 7.2; } }
+function jump() { if (P.fish) return; if (P.sit != null) { standUp(); return; } if (P.sled) { stopSled(); return; } if (mode === 'play' && P.grounded && !rolling && clock > ARN.stunUntil) { P.grounded = false; P.vy = 7.2; } }
 
 /* ================================================================
    눈덩이 굴리기와 쌓기
@@ -4560,7 +4920,7 @@ function dropRolling() {
 }
 function removeRolling() { if (rolling) { scene.remove(rolling.mesh); rolling = null; } }
 // 받침을 세울 수 없는 이유(없으면 null). 큰 눈덩이일수록 넓은 자리가 필요해요.
-const BLOCK_NAME = { tree: '나무', rock: '바위', lamp: '가로등', rack: '썰매 보관대', arena: '눈싸움장', center: '광장 트리', fence: '울타리', cabin: '오두막', board: '게시판', fire: '모닥불', bench: '통나무 의자', cart: '포차' };
+const BLOCK_NAME = { tree: '나무', rock: '바위', lamp: '가로등', rack: '썰매 보관대', arena: '눈싸움장', center: '광장 트리', fence: '울타리', cabin: '오두막', board: '게시판', fire: '모닥불', bench: '통나무 의자', cart: '포차', flag: '썰매 코스 깃대' };
 function placeWhy(x, z, r) {
   const d0 = Math.hypot(x, z);
   if (d0 > WORLD_R - 2) return '마을 끝이라 세울 수 없어요';
@@ -4568,6 +4928,7 @@ function placeWhy(x, z, r) {
   if (inPond(x, z, -r)) return '연못 위에는 세울 수 없어요';
   if (Math.hypot(x - GIANT.x, z - GIANT.z) < 6.5) return '공동 눈사람 자리라 비워 둬요';
   if (Math.hypot(x - CAMP.x, z - CAMP.z) < CAMP.r + r) return '모닥불 쉼터 자리라 비워 둬요';
+  if (inSledRun(x, z, r)) return '썰매 언덕이라 비워 둬요';
   let hit = null;
   nearColliders(x, z, c => { if (!hit && Math.hypot(x - c.x, z - c.z) < c.r + r + 0.3) hit = c; });
   if (hit) return `${BLOCK_NAME[hit.t] || '주변 물건'}에 너무 가까워요`;
@@ -4596,7 +4957,8 @@ function nearestSnowman(extra = 3) {
 const ballVol = r => 4 / 3 * Math.PI * r * r * r;
 const volM3 = v => (v * UNIT * UNIT * UNIT).toFixed(2);
 function actionContext() {
-  if (P.sled) return { kind: 'sledOff', key: 'E', text: '썰매에서 내리기', dim: 'W 밀기 · S 멈추기 · A/D 방향' };
+  if (P.sled) return { kind: 'sledOff', key: 'E', text: '썰매에서 내리기', dim: RUN.on ? '기록 경주 중 · 깃발 사이로!' : 'W 밀기 · S 멈추기 · A/D 방향' };
+  if (P.fish) return fishingContext();
   if (indoor) {
     if (nearStudioDoorIn()) return { kind: 'leave', key: 'E', text: '사진관 나가기' };
     const kb = nearKiosk();
@@ -4656,6 +5018,7 @@ function actionContext() {
   }
   if (P.sit != null) return P.food ? eatContext() : { kind: 'stand', key: 'E', text: '일어나기', dim: '움직여도 일어나요' };
   const cc = campContext(); if (cc) return cc;
+  const fc = fishContext(); if (fc) return fc;
   if (P.food) return eatContext();
   const l = nearestLoose();
   if (l) return { kind: 'pick', key: 'E', text: `눈덩이 다시 집기 (지름 ${cm(l.r)})`, loose: l };
@@ -4684,6 +5047,9 @@ function doPrimary() {
     case 'booth': openKiosk(ctx.b); break;
     case 'boothJoin': joinBooth(ctx.b); break;
     case 'mirror': openLookEditor('props'); break;
+    case 'fish': startFishing(ctx.h); break;
+    case 'fishHook': case 'fishWait': fishPress(); break;
+    case 'fishReel': break;
     case 'stack': startBalance('stack', wip, null); break;
     case 'give': startBalance('give', ctx.pe.wip, ctx.pe); break;
     case 'base': {
@@ -5401,7 +5767,7 @@ async function shareShot() {
    ================================================================ */
 const camDir = new THREE.Vector3();
 function throwBall() {
-  if (mode !== 'play' || P.sled || clock < ARN.stunUntil) return;
+  if (mode !== 'play' || P.sled || P.fish || clock < ARN.stunUntil) return;
   if (rolling) { toast('눈덩이를 굴리는 중엔 던질 수 없어요. E로 내려놓아요.'); return; }
   if (indoor) { toast('사진관 안에선 눈뭉치를 던질 수 없어요.'); return; }
   if (P.food) { toast(`${FOODS[P.food.k].nm}${FOODS[P.food.k].o} 들고 있어서 못 던져요. 먼저 ${FOODS[P.food.k].do}!`); return; }
@@ -5554,6 +5920,7 @@ const RANK_NOTES = {
   height: () => '키가 큰 눈사람이에요. 받침부터 머리 꼭대기까지 잰 키예요.',
   builders: () => '내 눈사람들이 받은 좋아요를 모두 더한 순위예요.',
   fight: () => '지금 접속한 친구들의 명중 횟수와 지금까지의 팀전 승리 기록이에요.',
+  rec: () => '썰매 기록 경주(빠른 순)와 얼음낚시(가장 큰 물고기) 마을 기록이에요.',
   hall: () => '주마다 1위를 한 눈사람이에요. 최근 여섯 작품은 광장 북쪽에 동상으로 서 있어요.',
 };
 const daysLeft = () => Math.max(1, Math.ceil((WK_START + 7 * DAY - Date.now()) / DAY));
@@ -5583,13 +5950,19 @@ function renderRank() {
     for (const d of rawSnow) if (d.w > 0 && d.uid !== NET.uid && !isBanned(d.uid)) ps.set(d.uid, { nick: clean(d.nk) || uidNick(d.uid) || '친구', sc: 0, w: d.w });
     for (const pe of peers.values()) if (pe.entered) { const id = pe.by || pe.uid || pe.peer; const cur = ps.get(id) || { nick: pe.nick, sc: 0, w: 0 }; cur.sc += pe.sc; cur.pe = pe; cur.nick = pe.nick; ps.set(id, cur); }
     [...ps.values()].sort((a, b) => b.w - a.w || b.sc - a.sc).forEach((p, i) => row(i, p.nick, p.me ? '나' : p.pe ? '접속 중 · 누르면 찾아가요' : '지금은 없어요', `승리 ${p.w} · 명중 ${p.sc}`, '', () => p.pe && visitPeer(p.pe), p.me));
+  } else if (rankTab === 'rec') {
+    const sec = t => { const li = document.createElement('li'); li.className = 'sec'; li.textContent = t; frag.append(li); };
+    const sl = recLeaders('sl'), fb = recLeaders('fb');
+    if (sl.length) { sec('🛷 썰매 기록 경주'); sl.slice(0, 20).forEach((e, i) => row(i, e.nk, e.me ? '나' : '썰매 언덕 보관대에서 출발', fmtSec(e.rec.sl), '', () => {}, e.me)); }
+    if (fb.length) { sec('🎣 얼음낚시 · 가장 큰 물고기'); fb.slice(0, 20).forEach((e, i) => row(i, e.nk, `${FISH[e.rec.fk] ? FISH[e.rec.fk].nm : '물고기'} · 지금까지 ${e.rec.fn}마리`, `${(e.rec.fb / 10).toFixed(1)}cm`, '', () => {}, e.me)); }
   } else {
     hallDocs.forEach((h, i) => row(i, h.item.nm, `${weekLabel(h.wk)} · 「${h.theme || '자유'}」 · ${h.nk || '친구'}`, `♥ ${h.likes}`, 'lk', () => (SM.get('hall:' + h.wk) ? visit('hall:' + h.wk) : toast('오래된 우승작은 동상 없이 기록만 남아 있어요.')), h.uid === NET.uid));
   }
   list.replaceChildren(frag);
   if (!list.children.length) {
     const li = document.createElement('li'); li.className = 'empty';
-    li.textContent = rankTab === 'fight' ? '아직 기록이 없어요. 북쪽 눈싸움장에서 팀전을 해 보세요.'
+    li.textContent = rankTab === 'rec' ? '아직 기록이 없어요. 썰매 언덕에서 기록 경주를 하거나 연못 얼음 구멍에서 낚시를 해 보세요.'
+      : rankTab === 'fight' ? '아직 기록이 없어요. 북쪽 눈싸움장에서 팀전을 해 보세요.'
       : rankTab === 'hall' ? '아직 우승작이 없어요. 이번 주 1위가 첫 번째 주인공이 돼요.'
       : rankTab === 'week' ? `이번 주에 만든 눈사람이 아직 없어요. 주제 「${themeNow()}」에 맞춰 첫 작품을 세워 보세요.`
       : '아직 완성된 눈사람이 없어요. E로 첫 눈덩이를 굴려 주인공이 되어 보세요.';
@@ -5856,6 +6229,7 @@ const MISSIONS = {
   note: ['방명록 남기기', 1], photo: ['사진 찍기', 1], giant: ['공동 눈사람에 보태기', 1], sled: ['썰매 타기', 1],
   throw: ['눈뭉치 던지기', 5], give: ['친구 받침에 눈덩이 올려 주기', 1], refill: ['눈사람에 눈 보충하기', 1], skate: ['연못에서 스케이트 타기', 1],
   snack: ['포차 간식 다 먹기', 1], fire: ['모닥불 가 통나무에 앉기', 1], cut4: ['사진관에서 네컷 찍기', 1],
+  fish: ['얼음낚시로 물고기 낚기', 1], sledrun: ['썰매 기록 경주 완주하기', 1],
 };
 const ONLINE_ONLY = new Set(['like', 'note', 'giant', 'give', 'refill']);
 const REWARDS = [
@@ -6033,7 +6407,7 @@ function publishPresence(now) {
     bl: rolling ? r3(rolling.r) : 0,
     wip: wip ? { x: wip.x, z: wip.z, ry: r2(wip.ry), b: wip.b, d: wip.d, nm: wip.nm || '' } : null,
     lz: loose.map(l => [l.x, l.z, l.r]),
-    ch: myChat, em: myEmote, th: recentThrows.slice(), gv: myGive, ht: myHit, ann: myAnn, pg: myPing, sn: mySnap,
+    ch: myChat, em: myEmote, th: recentThrows.slice(), gv: myGive, ht: myHit, ann: myAnn, pg: myPing, sn: mySnap, rc: myRc,
     ps: mode === 'photo' && photo && photo.withMe && photo.pose ? photo.pose : BOOTH && BOOTH.pose ? BOOTH.pose : '',
     sc: myScore, tm: ARN.team, as: ARN.score, ae: ARN.ep, sp: stamps,
     fd: P.food ? P.food.k : '', et: clock < P.eatUntil ? 1 : 0,
@@ -6563,7 +6937,8 @@ function closeTop() {
   if (mode === 'photo') { exitPhoto(); return; }
   if (mode === 'decorate') { closeDeco(); return; }
   if (cardKey) { closeCard(); return; }
-  if ($('#rank').classList.contains('open')) closeRank();
+  if ($('#rank').classList.contains('open')) { closeRank(); return; }
+  if (FI.on) stopFishing();
 }
 function setMini(on) { mapOn = on; mm.hidden = !on; LS.set('mini', on); $('#bm-mini').checked = on; }
 function toggleMap() { if (mode === 'map') closeBigMap(); else openBigMap(); }
@@ -6788,6 +7163,15 @@ $('#snap-solo').addEventListener('click', () => setWithMe(false));
 $('#snap-side').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); if (!e) return; photo.side = -(photo.side || 1); placeMeBeside(e); });
 $('#snap-reset').addEventListener('click', () => { if (!photo) return; const e = photo.key && SM.get(photo.key); CAM.yaw = e ? e.ry + 0.35 : photoScene() ? CAM.yaw : P.ry; CAM.pitch = photoScene() ? 0.04 : 0.12; photo.zoom = 1; photo.dist = 0; CAM.dragAt = clock; });
 $('#shot-close').addEventListener('click', () => { $('#shot').hidden = true; });
+{
+  const fb = $('#fi-btn'), up = () => { FI.bHold = false; };
+  fb.addEventListener('pointerdown', e => { e.preventDefault(); try { fb.setPointerCapture(e.pointerId); } catch { /* 무시 */ } FI.bHold = true; if (FI.ph !== 'reel') fishPress(); });
+  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) fb.addEventListener(t, up);
+  $('#fi-stop').addEventListener('click', () => stopFishing());
+  const ta = $('#t-act');
+  ta.addEventListener('pointerdown', () => { FI.tHold = true; });
+  for (const t of ['pointerup', 'pointercancel', 'pointerleave']) ta.addEventListener(t, () => { FI.tHold = false; });
+}
 $('#chip-sky').addEventListener('click', () => toast('🌠 매시 정각엔 별똥별 비가 6분, 🌌 30분엔 오로라가 10분 동안 떠요. 밤 하늘(설정 → 시간 → 밤)에서 보여요.', themeName === 'night' ? [] : [{ label: '밤하늘로 보기', fn: () => applyTheme('night') }], 6000));
 { const m = /[?&]sky=(aurora|meteor)/.exec(location.search); if (m) { skyForce(m[1]); if (themeName !== 'night') applyTheme('night'); } }
 $('#shot-mode').addEventListener('click', e => { const b = e.target.closest('[data-sm]'); if (b && !SHOT_LIVE.busy) { setShotMode(b.dataset.sm); sfx('pop'); } });
@@ -7059,7 +7443,7 @@ function updateHud(now) {
     html = `${keyHtml}${esc(ctx.text)}`;
     if (ctx.dim && !(touchUi && ctx.dim.startsWith('F '))) html += `<span class="dim">${esc(ctx.dim)}</span>`;
     if (ctx.view && !rolling) html += `<span class="dim">${touchUi ? '' : 'C '}「${esc(ctx.view.item.nm)}」 보기</span>`;
-    actLabel = { stack: '올리기', give: '올려주기', base: '받침 세우기', drop: '내려놓기', pick: '집기', decorate: '꾸미기', roll: '굴리기', giant: '보태기', sledOn: '썰매 타기', sledOff: '내리기', enter: '들어가기', leave: '나가기', booth: '촬영하기', boothJoin: '같이 찍기', mirror: '거울 보기', snack: '간식 받기', sit: '앉기', stand: '일어나기', eat: P.food ? FOODS[P.food.k].verb : '먹기', arenaJoin: '참가하기', none: '—', blocked: '못 보태요', toobig: '안 올라가요', full: '가득 찼어요', rebase: '새로 세우기' }[ctx.kind] || '굴리기';
+    actLabel = { stack: '올리기', give: '올려주기', base: '받침 세우기', drop: '내려놓기', pick: '집기', decorate: '꾸미기', roll: '굴리기', giant: '보태기', sledOn: '썰매 타기', sledOff: '내리기', enter: '들어가기', leave: '나가기', booth: '촬영하기', boothJoin: '같이 찍기', mirror: '거울 · 소품', fish: '낚시하기', fishWait: '당기기', fishHook: '당기기!', fishReel: '감기', snack: '간식 받기', sit: '앉기', stand: '일어나기', eat: P.food ? FOODS[P.food.k].verb : '먹기', arenaJoin: '참가하기', none: '—', blocked: '못 보태요', toobig: '안 올라가요', full: '가득 찼어요', rebase: '새로 세우기' }[ctx.kind] || '굴리기';
     promptWarn = !!ctx.warn;
     const tv = $('#t-view'); const s = nearestSnowman(4); tv.hidden = !s;
   }
@@ -7978,12 +8362,14 @@ function printBoothStrip(canvas, names, lay, by, live) {
 }
 
 const SIGNS = [
-  { lb: makeLabel('sign'), text: '썰매 언덕 · E로 타기', x: SLED_RACK.x, y: heightAt(SLED_RACK.x, SLED_RACK.z) + 2.3, z: SLED_RACK.z, d: 90 },
+  { lb: makeLabel('sign'), text: '썰매 언덕 · E로 타기', x: SLED_RACK.x, y: heightAt(SLED_RACK.x, SLED_RACK.z) + 2.3, z: SLED_RACK.z, d: 90, rec: 'sl' },
+  { lb: makeLabel('sign'), text: '🎣 얼음낚시', x: POND.x + Math.cos(2.4) * 12.6, y: groundY(POND.x + Math.cos(2.4) * 12.6, POND.z + Math.sin(2.4) * 12.6) + 2.2, z: POND.z + Math.sin(2.4) * 12.6, d: 80, rec: 'fb' },
   { lb: makeLabel('sign'), text: '팀 눈싸움장', x: 0, y: ARENA.y + 2.6, z: ARENA.z + ARENA.d / 2 + 0.6, d: 90 },
   { lb: makeLabel('sign'), text: '🔥 모닥불 쉼터', x: CAMP.x, y: CAMP_Y + 2.7, z: CAMP.z, d: 70, near: CAMP.r + 1 },
   { lb: makeLabel('sign'), text: '📷 눈사람 사진관', x: STUDIO_DOOR.x, y: heightAt(STUDIO_DOOR.x, STUDIO_DOOR.z) + 3.9, z: STUDIO_DOOR.z, d: 75, near: 3.2 },
 ];
 for (const sg of SIGNS) setText(sg.lb, 'nm', sg.lb.nmText, sg.text);
+updateRecSigns();
 stylizeScene();
 applyQuality();
 initPost();
