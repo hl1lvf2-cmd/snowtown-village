@@ -78,6 +78,7 @@ export class Village extends DurableObject {
     if (col === 'snowmen') {
       if (typeof d.nk === 'string') d.nk = mask(d.nk);
       if (Array.isArray(d.items)) for (const it of d.items) if (it && typeof it === 'object') { if (typeof it.nm === 'string') it.nm = mask(it.nm); if (typeof it.ms === 'string') it.ms = mask(it.ms); }
+      if (Array.isArray(d.pc)) for (const c of d.pc) if (c && typeof c.tx === 'string') c.tx = mask(c.tx); // 엽서 글
     } else if (col === 'notes' && Array.isArray(d.items)) {
       for (const n of d.items) if (n && typeof n.tx === 'string') n.tx = mask(n.tx);
     }
