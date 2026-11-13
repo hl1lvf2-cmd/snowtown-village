@@ -525,6 +525,20 @@ body.room-edit #touch, body.room-edit #chat { display: none; }
 .rp-item span { font-size: 12px; color: var(--muted); }
 .rp-item.mine { border-color: rgba(242, 193, 78, 0.7); }
 .rp-empty { font-size: 13px; color: var(--muted); text-align: center; margin: 6px 0; }
+.modal-card.xm-card { width: min(480px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 16px; display: grid; gap: 10px; border-radius: 20px; }
+.xm-card h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0; flex: 1; }
+.xm-dday { font-size: 13px; color: #ffd36e; margin-right: 8px; }
+.xm-sec { display: grid; gap: 8px; }
+.xm-list { display: grid; gap: 6px; }
+.xm-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); font-size: 14px; }
+.xm-row i { font-style: normal; font-size: 12px; color: var(--muted); flex: none; }
+#xm-mtbody { display: grid; gap: 10px; }
+#xm-mtbody p { margin: 0; font-size: 14px; }
+#xm-mtbody .xm-lead { color: var(--muted); font-size: 13px; }
+#xm-mtbody .xm-target { font-family: var(--font-display); font-size: 22px; color: #ffe9a8; }
+#xm-mtbody .xm-ok { color: #8affc1; }
+.post-an { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ffe9a8; }
+.chip.xmas { background: rgba(47, 154, 98, 0.35); border-color: rgba(140, 230, 170, 0.5); color: #fff; }
 .lbl-note { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
 .prop-rows { display: grid; gap: 6px; }
 .prop-row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -794,6 +808,7 @@ body.touch .keys.desk { display: none; }
         <span class="chip" id="chip-online"><i class="dot"></i><span>연결 중</span></span>
         <button class="chip sky" id="chip-sky" type="button" hidden></button>
         <button class="chip post" id="chip-post" type="button" hidden></button>
+        <button class="chip xmas" id="chip-xmas" type="button" hidden></button>
         <span class="chip theme" id="chip-theme"></span>
         <span class="chip" id="chip-snow"></span>
         <span class="chip warn" id="chip-save" hidden></span>
@@ -1090,6 +1105,26 @@ body.touch .keys.desk { display: none; }
   </div>
   <div id="bprint" hidden><div class="bprint-box"><div class="bslot"></div><div id="bprint-img"></div><p id="bprint-msg"></p></div></div>
   <div id="fade" aria-hidden="true"></div>
+  <div id="xmas" class="modal" hidden>
+    <div class="modal-card glass xm-card" role="dialog" aria-modal="true" aria-labelledby="xm-title">
+      <div class="sheet-head" style="padding:0"><h2 id="xm-title">🎄 광장 트리</h2><span id="xm-dday" class="xm-dday"></span><button class="x" id="xm-close" type="button" aria-label="닫기">×</button></div>
+      <div class="tabs post-tabs" role="tablist">
+        <button type="button" role="tab" data-xt="orn" aria-selected="true">장식 달기</button>
+        <button type="button" role="tab" data-xt="wish" aria-selected="false">소원 보기</button>
+        <button type="button" role="tab" data-xt="mt" aria-selected="false">🎅 마니또</button>
+      </div>
+      <div id="xm-orn" class="xm-sec">
+        <div class="lbl-sm">장식</div><div id="xm-kinds" class="prop-row" role="radiogroup" aria-label="장식"></div>
+        <div class="lbl-sm">색</div><div id="xm-cols" class="sw-row" role="radiogroup" aria-label="색"></div>
+        <input id="xm-tx" class="text-in" maxlength="24" placeholder="장식에 걸 소원 한 줄 (24자까지, 안 써도 돼요)">
+        <div class="post-foot"><span id="xm-note"></span><button class="btn primary" type="button" id="xm-hang">트리에 달기</button></div>
+        <div id="xm-mine" class="xm-list"></div>
+      </div>
+      <div id="xm-wish" class="xm-sec" hidden><div id="xm-wishes" class="xm-list"></div></div>
+      <div id="xm-mt" class="xm-sec" hidden><div id="xm-mtbody"></div></div>
+    </div>
+  </div>
+
   <div id="roompick" class="modal" hidden>
     <div class="modal-card glass rp-card" role="dialog" aria-modal="true" aria-labelledby="rp-title">
       <div class="sheet-head" style="padding:0"><h2 id="rp-title">🏠 어느 방으로 갈까요?</h2><button class="x" id="rp-close" type="button" aria-label="닫기">×</button></div>
@@ -1110,6 +1145,7 @@ body.touch .keys.desk { display: none; }
         <select id="post-to" class="text-in"></select>
         <div class="snap-row post-designs" id="post-designs" role="group" aria-label="엽서 그림"></div>
         <textarea id="post-tx" class="text-in" maxlength="80" rows="2" placeholder="따뜻한 한마디를 적어요 (80자까지)"></textarea>
+        <label class="post-an" id="post-an-row" hidden><input type="checkbox" id="post-an"> 🎅 마니또로 몰래 보내기 (크리스마스에 공개)</label>
         <div class="post-foot"><span id="post-left">0 / 80</span><button class="btn primary" type="button" id="post-send">보내기</button></div>
         <p class="post-note" id="post-note"></p>
       </div>
@@ -1693,6 +1729,7 @@ function skyUi(st, t) {
   else if (nx && nx.start - t < 15 * 60000) { const s = Math.ceil((nx.start - t) / 1000); txt = `${nx.ev.ic} <span class="sk-nm">${nx.ev.nm} </span>${s < 60 ? s + '초' : Math.ceil(s / 60) + '분'} 뒤`; }
   if (SKY.chip !== txt) { SKY.chip = txt; chip.innerHTML = txt; chip.title = cur ? `${cur.ev.nm} 중` : nx ? `${nx.ev.nm} 예정` : ''; }
   chip.hidden = !txt; chip.classList.toggle('live', !!cur);
+  xmasChip(); xmasCheck();
   const wish = $('#emo-wish'), wOn = !!(cur && cur.ev.k === 'meteor');
   if (wish.hidden === wOn) wish.hidden = !wOn;
   if (!entered || mode === 'intro') return;
@@ -2359,7 +2396,7 @@ const SLED_RACK = { x: SLED.x + 2.6, z: SLED.z + 0.6 };
 {
   const g = new THREE.Group(), S = 2.2;
   const tr = put(g, new THREE.Mesh(TRUNK_GEO, MAT.woodDark)); tr.scale.setScalar(S); tr.castShadow = true;
-  const lv = put(g, new THREE.Mesh(FOLIAGE_MAX, FOLIAGE_MAT)); lv.scale.setScalar(S); lv.castShadow = true; lv.receiveShadow = true;
+  const lv = put(g, new THREE.Mesh(FOLIAGE_MAX, FOLIAGE_MAT)); lv.scale.setScalar(S); lv.castShadow = true; lv.receiveShadow = true; lv.name = 'plazaFoliage';
   const tiers = TREE_TIERS.map(([r, h, y]) => [r * 0.95, h, y]);
   const orn = new THREE.InstancedMesh(GEO.sphereLo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 54);
   const cols = ['#ff4d5e', '#ffd166', '#5ec8ff', '#ffffff', '#ff9a3c'].map(c => new THREE.Color(c));
@@ -2372,7 +2409,7 @@ const SLED_RACK = { x: SLED.x + 2.6, z: SLED.z + 0.6 };
   g.add(orn);
   const star = put(g, mesh(GEO.octa, new THREE.MeshBasicMaterial({ color: '#ffd84d' }), 0, 4.8 * S + 0.25, 0, 0.5, 0.75, 0.25));
   const sg = put(g, new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_WARM, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending })));
-  sg.position.copy(star.position); sg.scale.setScalar(4);
+  sg.position.copy(star.position); sg.scale.setScalar(4); sg.name = 'treeStarGlow';
   scene.add(g);
   addCollider({ x: 0, z: 0, r: 2.3, t: 'center' });
 }
@@ -3787,7 +3824,7 @@ const POST = (() => {
 function cleanCards(a) {
   if (!Array.isArray(a)) return [];
   return a.slice(-20).filter(c => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.to === 'string' && isNum(c.at))
-    .map(c => ({ id: c.id.slice(0, 12), to: c.to.slice(0, 80), d: hasKey(CARD_DESIGNS, c.d) ? c.d : 'flake', tx: str(c.tx, 80), at: c.at }));
+    .map(c => ({ id: c.id.slice(0, 12), to: c.to.slice(0, 80), d: hasKey(CARD_DESIGNS, c.d) ? c.d : 'flake', tx: str(c.tx, 80), at: c.at, ...(c.an === 1 ? { an: 1 } : {}) }));
 }
 let myCards = cleanCards(LS.get('cards', [])), postTab = 'write', postTold = new Set(), postReply = '';
 const postSeenAt = () => LS.get('postSeen', 0) || 0;
@@ -3796,7 +3833,7 @@ function myInbox() {
   if (!NET.uid) return out;
   for (const d of rawSnow) {
     if (d.uid === NET.uid || isBanned(d.uid) || muted.has(d.uid) || !d.pc) continue;
-    for (const c of d.pc) if (c.to === NET.uid) out.push({ ...c, from: d.uid, nk: clean(d.nk) || uidNick(d.uid) || '친구' });
+    for (const c of d.pc) if (c.to === NET.uid) { const nk = clean(d.nk) || uidNick(d.uid) || '친구', hide = c.an && Date.now() < XMAS.rev; out.push({ ...c, from: hide ? '' : d.uid, nk: hide ? '🎅 비밀 마니또' : c.an ? `${nk} (마니또)` : nk }); }
   }
   return out.sort((a, b) => b.at - a.at).slice(0, 40);
 }
@@ -3867,7 +3904,7 @@ function renderPost() {
       const row = document.createElement('div'); row.className = 'post-row';
       const who = document.createElement('span'); who.textContent = `${c.nk} · ${fmtDateDot(c.at)}`;
       const rb = document.createElement('button'); rb.type = 'button'; rb.className = 'btn sm'; rb.textContent = '답장 쓰기'; rb.addEventListener('click', () => { postTab = 'write'; postReply = c.from; renderPost(); });
-      row.append(who, rb); it.append(row); list.append(it);
+      row.append(who); if (c.from) row.append(rb); it.append(row); list.append(it);
     }
     updatePostChip();
   }
@@ -3876,7 +3913,8 @@ function syncPostWrite() {
   const d = $('#post-designs').dataset.v || 'flake';
   for (const b of $$('#post-designs [data-cd]')) b.setAttribute('aria-pressed', String(b.dataset.cd === d));
   const sel = $('#post-to'), toNk = sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.replace(' · 접속 중', '') : '친구';
-  drawCard($('#post-prev'), { d, tx: $('#post-tx').value.trim() || '여기에 쓴 글이 엽서에 들어가요', at: Date.now(), toNk, fromNk: nick });
+  const canAn = mtPhase() === 'play' && !!sel.value && sel.value === mtTarget(); $('#post-an-row').hidden = !canAn; if (!canAn) $('#post-an').checked = false;
+  drawCard($('#post-prev'), { d, tx: $('#post-tx').value.trim() || '여기에 쓴 글이 엽서에 들어가요', at: Date.now(), toNk, fromNk: $('#post-an').checked ? '🎅 비밀 마니또' : nick });
   $('#post-left').textContent = `${[...$('#post-tx').value].length} / 80`;
 }
 function sendPost() {
@@ -3887,7 +3925,8 @@ function sendPost() {
   const day = kstDay(), q = LS.get('postQuota', null), used = q && q.d === day ? q.n : 0;
   if (used >= 10) { toast('엽서는 하루에 10통까지 보낼 수 있어요. 내일 또 써요!'); return; }
   if (myCards.length && Date.now() - myCards[myCards.length - 1].at < 15000) { toast('조금만 쉬었다가 다음 엽서를 보내요.'); return; }
-  myCards = [...myCards, { id: Math.random().toString(36).slice(2, 10), to, d, tx, at: Date.now() }].slice(-20);
+  const an = $('#post-an').checked && mtPhase() === 'play' && to === mtTarget();
+  myCards = [...myCards, { id: Math.random().toString(36).slice(2, 10), to, d, tx, at: Date.now(), ...(an ? { an: 1 } : {}) }].slice(-20);
   LS.set('cards', myCards); LS.set('postQuota', { d: day, n: used + 1 });
   saveMine(); mission('post'); sfx('chime');
   const nm = $('#post-to').selectedOptions[0] ? $('#post-to').selectedOptions[0].textContent.replace(' · 접속 중', '') : '친구';
@@ -4224,6 +4263,178 @@ function roomRotate() {
   if (furnFits(L, ROOMST.sel, a[0], gx, gz, r)) { a[1] = gx; a[2] = gz; a[3] = r; roomApply(); sfx('pop'); } else toast('돌릴 자리가 없어요. 조금 옮긴 뒤 돌려 보세요.', [], 2200);
 }
 function roomDelete() { const L = ROOMST.layout; if (ROOMST.sel < 0) return; L.it.splice(ROOMST.sel, 1); ROOMST.sel = -1; roomApply(); sfx('bump'); }
+/* ================================================================
+   크리스마스: 광장 트리에 다 같이 장식 달기(소원 한 줄), 마니또(우체국으로 몰래 엽서), 크리스마스까지 남은 날.
+   장식·마니또 참가는 내 문서(snowmen/내아이디)의 orn·mt 칸에 저장
+   ================================================================ */
+const ORN = { ball: { nm: '방울', ic: '🔴' }, star: { nm: '별', ic: '⭐' }, bell: { nm: '종', ic: '🔔' }, heart: { nm: '하트', ic: '💗' }, flake: { nm: '눈꽃', ic: '❄️' }, gift: { nm: '선물', ic: '🎁' }, cane: { nm: '지팡이 사탕', ic: '🍭' } };
+const ORN_COLS = ['#e0283c', '#f2c230', '#3a7cf0', '#ffffff', '#ff7aa8', '#2f9a62'];
+const ORN_MAX = 3;
+const kstNow = () => new Date(Date.now() + 9 * 3600e3);
+// 올해 크리스마스 일정(한국 시간): 마니또 참가는 12월 18일 0시까지, 공개는 25일 0시
+const XMAS = (() => {
+  const k = kstNow(), y = k.getUTCMonth() === 0 && k.getUTCDate() <= 5 ? k.getUTCFullYear() - 1 : k.getUTCFullYear();
+  const at = (m, d) => Date.UTC(y, m, d) - 9 * 3600e3;
+  return { y, cut: at(11, 18), rev: at(11, 25), end: at(11, 27) };
+})();
+if (/[?&]xmas=test/.test(location.search)) { const t = Date.now(); XMAS.cut = t + 60e3; XMAS.rev = t + 180e3; }
+const cleanOrn = a => (Array.isArray(a) ? a.slice(0, ORN_MAX).filter(o => Array.isArray(o) && hasKey(ORN, o[0]) && isNum(o[2])).map(o => [o[0], clamp(Math.round(o[1]) || 0, 0, ORN_COLS.length - 1), o[2], str(o[3], 24)]) : []);
+const cleanMt = m => (m && typeof m === 'object' && isNum(m.y) && isNum(m.at) ? { y: m.y, at: m.at } : null);
+let myOrn = cleanOrn(LS.get('orn', [])), myMt = cleanMt(LS.get('mt', null));
+// 장식 자리: 광장 트리 잎 겉면에 고르게(실제 잎에 광선을 쏴서 겉면을 찾음). 모든 사람이 같은 순서로 같은 자리를 얻음
+const ORN_RINGS = [[2.7, 16], [3.3, 15], [3.95, 13], [5.2, 13], [5.8, 12], [6.4, 10], [7.3, 10], [7.9, 9], [8.5, 7], [9.1, 5]];
+const ORN_N = ORN_RINGS.reduce((n, r) => n + r[1], 0);
+let ORN_SLOTS = null;
+function ornSlots() {
+  if (ORN_SLOTS) return ORN_SLOTS;
+  const fol = scene.getObjectByName('plazaFoliage'), rc = new THREE.Raycaster(), o = new THREE.Vector3(), d = new THREE.Vector3();
+  if (fol) fol.updateMatrixWorld(true);
+  ORN_SLOTS = [];
+  ORN_RINGS.forEach(([y, n], ri) => {
+    for (let i = 0; i < n; i++) {
+      const a = (i + (ri % 2) * 0.5) / n * TAU + ri * 0.37;
+      o.set(Math.cos(a) * 9, y, Math.sin(a) * 9); d.set(-Math.cos(a), 0, -Math.sin(a));
+      rc.set(o, d); const h = fol ? rc.intersectObject(fol, false)[0] : null;
+      const rad = h ? 9 - h.distance + 0.1 : 2;
+      ORN_SLOTS.push([Math.cos(a) * rad, y, Math.sin(a) * rad, a]);
+    }
+  });
+  return ORN_SLOTS;
+}
+function allOrnaments() {
+  const list = [];
+  const push = (uid, nk, arr) => arr.forEach((o, i) => list.push({ uid, nk, i, k: o[0], c: o[1], at: o[2], tx: o[3] }));
+  for (const d of rawSnow) if (d.uid !== NET.uid && !isBanned(d.uid) && d.orn && d.orn.length) push(d.uid, clean(d.nk) || uidNick(d.uid) || '친구', d.orn);
+  push(NET.uid || 'me', nick || '나', myOrn);
+  list.sort((a, b) => a.at - b.at || (a.uid < b.uid ? -1 : 1));
+  const used = new Set();
+  for (const o of list) { let s = hashStr(o.uid + ':' + o.at) % ORN_N, n = 0; while (used.has(s) && n++ < ORN_N) s = (s + 7) % ORN_N; used.add(s); o.slot = s; }
+  return list;
+}
+const ornG = new THREE.Group(); scene.add(ornG);
+let ornSig = '', treeStar = null;
+function makeOrnament(k, col) {
+  const g = new THREE.Group(), m = mat(col, { emissive: col, emissiveIntensity: 0.25 }), add = (geo, mm, x, y, z, sx, sy, sz) => { const o = mesh(geo, mm, x, y, z, sx, sy, sz); g.add(o); return o; };
+  if (k === 'ball') { add(GEO.sphere, m, 0, 0, 0, 0.2); add(GEO.cyl, MAT.gold, 0, 0.21, 0, 0.05, 0.06, 0.05); }
+  else if (k === 'star') add(GEO.octa, m, 0, 0, 0, 0.26, 0.3, 0.1);
+  else if (k === 'bell') { add(GEO.cylTaper, m, 0, 0, 0, 0.16, 0.26, 0.16).rotation.x = Math.PI; add(GEO.sphereLo, MAT.gold, 0, -0.15, 0, 0.06); }
+  else if (k === 'heart') add(GEO.heart, m, 0, 0, 0, 0.38, 0.38, 0.38);
+  else if (k === 'flake') { const f = flakeMesh(m); f.scale.setScalar(1.3); g.add(f); }
+  else if (k === 'gift') { add(GEO.box, m, 0, 0, 0, 0.3, 0.3, 0.3); add(GEO.box, MAT.gold, 0, 0, 0, 0.32, 0.32, 0.07); add(GEO.box, MAT.gold, 0, 0, 0, 0.07, 0.32, 0.32); }
+  else { const c = add(GEO.halfTorus, MAT.white, 0, 0.14, 0, 0.09, 0.09, 0.18); c.rotation.z = 0; add(GEO.cyl, mat('#e0283c'), -0.09, -0.06, 0, 0.035, 0.4, 0.035); add(GEO.cyl, MAT.white, 0.09, 0.12, 0, 0.034, 0.05, 0.034); }
+  return g;
+}
+function buildOrnaments() {
+  const list = allOrnaments(), sig = JSON.stringify(list.map(o => [o.slot, o.k, o.c]));
+  if (sig === ornSig) return list; ornSig = sig;
+  ornG.traverse(o => { if (o.isMesh && o.userData.ownGeo) o.geometry.dispose(); }); ornG.clear();
+  const SL = ornSlots();
+  for (const o of list) { const [x0, y, z0, a] = SL[o.slot], x = x0 + Math.cos(a) * 0.15, z = z0 + Math.sin(a) * 0.15, g = makeOrnament(o.k, ORN_COLS[o.c]); g.position.set(x, y, z); g.rotation.y = Math.PI / 2 - a; g.scale.setScalar(1.7); ornG.add(g); }
+  ornG.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  // 장식이 늘수록 별이 더 환하게
+  treeStar = treeStar || scene.getObjectByName('treeStarGlow');
+  if (treeStar) treeStar.scale.setScalar(4 + Math.min(4, list.length * 0.08));
+  return list;
+}
+function xmasContext() {
+  if (Math.hypot(P.pos.x, P.pos.z) > 4.3) return null;
+  return { kind: 'xmas', key: 'E', text: '🎄 트리에 장식 달기', dim: `장식 ${allOrnaments().length}개 · 소원을 적어 달아요` };
+}
+/* ---------- 마니또 ---------- */
+function mtParticipants() {
+  const ps = new Map();
+  for (const d of rawSnow) if (d.mt && d.mt.y === XMAS.y && d.mt.at < XMAS.cut && !isBanned(d.uid)) ps.set(d.uid, clean(d.nk) || uidNick(d.uid) || '친구');
+  if (myMt && myMt.y === XMAS.y && myMt.at < XMAS.cut && NET.uid) ps.set(NET.uid, nick || '나');
+  return ps;
+}
+// 참가자를 아이디 순으로 놓고 올해 값으로 섞은 뒤, 다음 사람을 몰래 챙겨요(돌아가며 한 바퀴)
+function mtOrder() {
+  const ids = [...mtParticipants().keys()].sort();
+  const rng = mulberry32(hashStr('manitto' + XMAS.y));
+  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  return ids;
+}
+function mtTarget() { const o = mtOrder(), i = o.indexOf(NET.uid); return o.length >= 2 && i >= 0 ? o[(i + 1) % o.length] : null; }
+function mtGiver() { const o = mtOrder(), i = o.indexOf(NET.uid); return o.length >= 2 && i >= 0 ? o[(i - 1 + o.length) % o.length] : null; }
+const mtPhase = () => (Date.now() < XMAS.cut ? 'join' : Date.now() < XMAS.rev ? 'play' : Date.now() < XMAS.end ? 'reveal' : 'off');
+function mtJoin() {
+  if (!(NET.mode === 'online' && NET.canSave)) { toast('친구들과 연결돼 있고 참여 권한이 있을 때 참가할 수 있어요.'); return; }
+  myMt = { y: XMAS.y, at: Date.now() }; LS.set('mt', myMt); saveMine(); sfx('chime');
+  toast('🎅 마니또에 참가했어요! 12월 18일에 몰래 챙길 친구가 정해져요.'); renderXmas();
+}
+/* ---------- 크리스마스 창 ---------- */
+let xmasTab = 'orn';
+function openXmas(tab) { if (!entered) return; xmasTab = tab || 'orn'; $('#xmas').hidden = false; renderXmas(); sfx('pop'); }
+function closeXmas() { $('#xmas').hidden = true; }
+function renderXmas() {
+  for (const b of $$('#xmas [data-xt]')) b.setAttribute('aria-selected', String(b.dataset.xt === xmasTab));
+  for (const id of ['orn', 'wish', 'mt']) $('#xm-' + id).hidden = xmasTab !== id;
+  const dl = Math.ceil((XMAS.rev - Date.now()) / 86400e3);
+  $('#xm-dday').textContent = dl > 0 ? `크리스마스까지 ${dl}일` : Date.now() < XMAS.end ? '메리 크리스마스! 🎄' : '';
+  if (xmasTab === 'orn') {
+    const kb = $('#xm-kinds'), cb = $('#xm-cols');
+    if (!kb.children.length) {
+      for (const [k, O] of Object.entries(ORN)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pc'; b.dataset.ok = k; b.textContent = O.ic; b.title = O.nm; b.setAttribute('aria-label', O.nm); kb.append(b); }
+      ORN_COLS.forEach((c, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.background = c; b.dataset.oc = i; b.setAttribute('aria-label', `색 ${i + 1}`); cb.append(b); });
+    }
+    const k = kb.dataset.v || 'ball', c = +(cb.dataset.v || 0);
+    for (const b of $$('#xm-kinds [data-ok]')) b.setAttribute('aria-checked', String(b.dataset.ok === k));
+    for (const b of $$('#xm-cols [data-oc]')) b.setAttribute('aria-checked', String(+b.dataset.oc === c));
+    const mine = $('#xm-mine'); mine.innerHTML = '';
+    myOrn.forEach((o, i) => { const r = document.createElement('div'); r.className = 'xm-row'; const t = document.createElement('span'); t.textContent = `${ORN[o[0]].ic} ${o[3] || ORN[o[0]].nm}`; const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = '떼기'; b.addEventListener('click', () => { myOrn.splice(i, 1); saveOrn(); }); r.append(t, b); mine.append(r); });
+    $('#xm-hang').disabled = myOrn.length >= ORN_MAX;
+    $('#xm-note').textContent = myOrn.length >= ORN_MAX ? `장식은 ${ORN_MAX}개까지 달 수 있어요. 하나를 떼면 새로 달 수 있어요.` : `내 장식 ${myOrn.length} / ${ORN_MAX} · 모두가 같은 트리를 꾸며요`;
+  } else if (xmasTab === 'wish') {
+    const list = $('#xm-wishes'); list.innerHTML = '';
+    const all = allOrnaments().filter(o => o.tx).sort((a, b) => b.at - a.at).slice(0, 60);
+    if (!all.length) { const p = document.createElement('p'); p.className = 'post-empty'; p.textContent = '아직 소원이 없어요. 첫 장식을 달아 볼까요?'; list.append(p); }
+    for (const o of all) { const r = document.createElement('div'); r.className = 'xm-row'; const t = document.createElement('span'); t.textContent = `${ORN[o.k].ic} ${clean(o.tx)}`; const n = document.createElement('i'); n.textContent = o.nk; r.append(t, n); list.append(r); }
+  } else {
+    const ph = mtPhase(), ps = mtParticipants(), joined = !!(myMt && myMt.y === XMAS.y), box = $('#xm-mtbody'); box.innerHTML = '';
+    const p = (t, cls) => { const e = document.createElement('p'); e.textContent = t; if (cls) e.className = cls; box.append(e); return e; };
+    const btn = (t, fn, pri) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (pri ? ' primary' : ''); b.textContent = t; b.addEventListener('click', fn); box.append(b); return b; };
+    p('마니또는 몰래 챙겨 줄 친구를 정해서, 크리스마스까지 이름을 숨기고 엽서를 보내는 놀이예요. 크리스마스에 누가 나의 마니또였는지 공개돼요.', 'xm-lead');
+    if (ph === 'join') {
+      p(`참가 ${ps.size + (joined && !ps.has(NET.uid) ? 1 : 0)}명 · ${new Date(XMAS.cut + 9 * 3600e3).getUTCMonth() + 1}월 ${new Date(XMAS.cut + 9 * 3600e3).getUTCDate()}일에 짝이 정해져요`);
+      if (joined) p('🎅 참가했어요! 짝이 정해지면 알려 줄게요.', 'xm-ok'); else btn('🎅 마니또 참가하기', mtJoin, true);
+    } else if (ph === 'play') {
+      const tg = mtTarget();
+      if (!tg) p(joined ? '참가자가 모자라서 이번엔 짝이 정해지지 않았어요.' : '참가 기간이 끝났어요. 내년에 함께해요!');
+      else {
+        p(`몰래 챙길 친구: ${ps.get(tg) || '친구'}`, 'xm-target');
+        p('우체국에서 이 친구에게 엽서를 쓸 때 "마니또로 몰래 보내기"를 켜면 이름 대신 🎅 비밀 마니또로 가요.');
+        btn('📮 몰래 엽서 쓰기', () => { closeXmas(); openPost('write', tg); }, true);
+      }
+    } else if (ph === 'reveal') {
+      const gv = mtGiver();
+      p(gv ? `🎄 나의 마니또는 ${ps.get(gv) || '친구'}님이었어요!` : '메리 크리스마스! 🎄', 'xm-target');
+    } else p('다음 크리스마스에 다시 열려요.');
+  }
+}
+function saveOrn() { LS.set('orn', myOrn); LS.set('ornSet', true); if (NET.mode === 'online' && NET.canSave) saveMine(); buildOrnaments(); renderXmas(); }
+function hangOrnament() {
+  if (myOrn.length >= ORN_MAX) return;
+  const k = $('#xm-kinds').dataset.v || 'ball', c = +($('#xm-cols').dataset.v || 0), tx = clean($('#xm-tx').value.trim()).slice(0, 24);
+  myOrn.push([k, c, Date.now(), tx]); $('#xm-tx').value = '';
+  saveOrn(); mission('orn'); sfx('chime');
+  burst(0, 6, 0, 26, ['#ffd84d', '#ffffff', '#ff6b8f', '#7fd3ff'], 3, 3, 0.08, 1.4);
+  toast(`🎄 트리에 ${ORN[k].nm}을(를) 달았어요!${tx ? ' 소원도 함께 걸었어요.' : ''}`);
+}
+function xmasChip() {
+  const ch = $('#chip-xmas'), t = Date.now(), dl = Math.ceil((XMAS.rev - t) / 86400e3);
+  const on = t < XMAS.end && dl <= 50;
+  ch.hidden = !on; if (!on) return;
+  const txt = dl > 0 ? `🎄 D-${dl}` : '🎄 메리 크리스마스';
+  if (ch.textContent !== txt) ch.textContent = txt;
+}
+let mtTold = '';
+function xmasCheck() {
+  if (!entered) return;
+  const ph = mtPhase(), key = ph + XMAS.y;
+  if (mtTold === key) return; mtTold = key;
+  if (ph === 'play' && myMt && myMt.y === XMAS.y && mtTarget() && !LS.get('mtToldPlay' + XMAS.y, false)) { LS.set('mtToldPlay' + XMAS.y, true); toast('🎅 마니또 짝이 정해졌어요! 누구를 몰래 챙길지 확인해요.', [{ label: '보기', fn: () => openXmas('mt') }], 7000); }
+  if (ph === 'reveal' && myMt && myMt.y === XMAS.y && mtGiver() && !LS.get('mtToldRev' + XMAS.y, false)) { LS.set('mtToldRev' + XMAS.y, true); toast('🎄 메리 크리스마스! 나의 마니또가 공개됐어요.', [{ label: '보기', fn: () => openXmas('mt') }], 8000); }
+}
 const RING_GEO = new THREE.TorusGeometry(0.62, 0.06, 6, 28);
 function setTeamRing(av, tm) {
   const u = av.userData;
@@ -4958,7 +5169,7 @@ let myWrite = null, myWritePending = false;
 function saveMine() {
   if (!NET.db || !NET.uid) return Promise.resolve(false);
   if (myWrite) { myWritePending = true; return myWrite; }
-  myWrite = NET.db.doc('snowmen/' + NET.uid).set({ nk: nick, c: colorIdx, items: myItems.slice(-MAX_ITEMS), w: ARN.wins, rec: myRec, pc: myCards, rm: myRoom, t: Date.now() })
+  myWrite = NET.db.doc('snowmen/' + NET.uid).set({ nk: nick, c: colorIdx, items: myItems.slice(-MAX_ITEMS), w: ARN.wins, rec: myRec, pc: myCards, rm: myRoom, orn: myOrn, mt: myMt, t: Date.now() })
     .then(() => true, err => {
       if (err && err.code === 'invalid_argument') { NET.canSave = false; updateChips(); toast('이 페이지에 저장할 권한이 없어서, 눈사람은 접속해 있는 동안만 보여요.'); }
       else if (err && err.code === 'quota_exceeded') toast('마을 저장 공간이 가득 찼어요. 오래된 눈사람을 허물어 주세요.');
@@ -5014,7 +5225,7 @@ function subscribeDb() {
   const docsOf = snap => snap.docs.filter(x => x.exists).map(x => ({ id: x.id, d: x.data() || {} }));
   db.collection('snowmen').onSnapshot(snap => {
     if (!snap.metadata.fromCache) { clearTimeout(timer); NET.dbLoaded = true; NET.note = ''; loaded.snow = true; }
-    rawSnow = docsOf(snap).map(({ id, d }) => ({ uid: id, nk: str(d.nk, 12), c: clamp(Math.round(isNum(d.c) ? d.c : 0), 0, 7), w: isNum(d.w) ? clamp(Math.round(d.w), 0, 9999) : 0, rec: cleanRec(d.rec), pc: cleanCards(d.pc), rm: cleanRoom(d.rm), items: Array.isArray(d.items) ? d.items.slice(0, MAX_ITEMS).map(cleanItem).filter(Boolean) : [] }));
+    rawSnow = docsOf(snap).map(({ id, d }) => ({ uid: id, nk: str(d.nk, 12), c: clamp(Math.round(isNum(d.c) ? d.c : 0), 0, 7), w: isNum(d.w) ? clamp(Math.round(d.w), 0, 9999) : 0, rec: cleanRec(d.rec), pc: cleanCards(d.pc), rm: cleanRoom(d.rm), orn: cleanOrn(d.orn), mt: cleanMt(d.mt), items: Array.isArray(d.items) ? d.items.slice(0, MAX_ITEMS).map(cleanItem).filter(Boolean) : [] }));
     ingestSnow(); updateChips(); maybeNews();
   }, () => { clearTimeout(timer); NET.note = '눈사람 목록을 불러오지 못했어요'; updateChips(); });
   if (NET.isOwner) db.collection('reports').onSnapshot(snap => {
@@ -5080,6 +5291,8 @@ function ingestSnow() {
   const mine = rawSnow.find(x => x.uid === NET.uid);
   if (!myWrite) { myItems = mine ? mine.items : []; if (mine) ARN.wins = Math.max(ARN.wins, mine.w); }
   if (mine && mine.pc && mine.pc.length && !myWrite) { const ids = new Set(myCards.map(c => c.id)); const add = mine.pc.filter(c => !ids.has(c.id)); if (add.length) { myCards = [...myCards, ...add].sort((a, b) => a.at - b.at).slice(-20); LS.set('cards', myCards); } }
+  if (mine && !myWrite) { if (mine.orn.length && !myOrn.length && !LS.get('ornSet', false)) { myOrn = mine.orn; LS.set('orn', myOrn); } if (mine.mt && !myMt) { myMt = mine.mt; LS.set('mt', myMt); } }
+  buildOrnaments();
   postCheck();
   if (mine && mine.rm && mine.rm.t > (myRoom.t || 0) && !ROOMST.edit) { myRoom = mine.rm; LS.set('room', myRoom); }
   if (ROOMST.owner && !ROOMST.edit) buildRoom(roomLayoutOf(ROOMST.owner));
@@ -5749,6 +5962,7 @@ function actionContext() {
   const pc = petContext(); if (pc) return pc;
   const po = postContext(); if (po) return po;
   const rd = roomDoorContext(); if (rd) return rd;
+  const xc = xmasContext(); if (xc) return xc;
   const cc = campContext(); if (cc) return cc;
   const fc = fishContext(); if (fc) return fc;
   if (P.food) return eatContext();
@@ -5784,6 +5998,7 @@ function doPrimary() {
     case 'fishReel': break;
     case 'post': openPost(); break;
     case 'roomDoor': openRoomPick(); break;
+    case 'xmas': openXmas(); break;
     case 'roomLeave': leaveRoom(); break;
     case 'petAdopt': setMyPet(ctx.k); break;
     case 'petBye': { const K = PET_KINDS[PETS.mine.kind]; setMyPet(''); toast(`${K.ic} ${K.nm}${K.eun} 집으로 돌아갔어요. 또 놀러 와요!`); break; }
@@ -6966,7 +7181,7 @@ const MISSIONS = {
   note: ['방명록 남기기', 1], photo: ['사진 찍기', 1], giant: ['공동 눈사람에 보태기', 1], sled: ['썰매 타기', 1],
   throw: ['눈뭉치 던지기', 5], give: ['친구 받침에 눈덩이 올려 주기', 1], refill: ['눈사람에 눈 보충하기', 1], skate: ['연못에서 스케이트 타기', 1],
   snack: ['포차 간식 다 먹기', 1], fire: ['모닥불 가 통나무에 앉기', 1], cut4: ['사진관에서 네컷 찍기', 1],
-  fish: ['얼음낚시로 물고기 낚기', 1], sledrun: ['썰매 기록 경주 완주하기', 1], pet: ['동물 친구에게 재주 시키기', 1], post: ['친구에게 엽서 보내기', 1], room: ['내 방 꾸미기', 1],
+  fish: ['얼음낚시로 물고기 낚기', 1], sledrun: ['썰매 기록 경주 완주하기', 1], pet: ['동물 친구에게 재주 시키기', 1], post: ['친구에게 엽서 보내기', 1], room: ['내 방 꾸미기', 1], orn: ['광장 트리에 장식 달기', 1],
 };
 const ONLINE_ONLY = new Set(['like', 'note', 'giant', 'give', 'refill', 'post']);
 const REWARDS = [
@@ -7676,6 +7891,7 @@ function closeTop() {
   if (!$('#shot').hidden) { $('#shot').hidden = true; return; }
   if (!$('#post').hidden) { closePost(); return; }
   if (!$('#roompick').hidden) { closeRoomPick(); return; }
+  if (!$('#xmas').hidden) { closeXmas(); return; }
   if (ROOMST.edit) { roomEditEnd(false); return; }
   if (!$('#settings').hidden) { closeSettings(); return; }
   if (!$('#admin').hidden) { $('#admin').hidden = true; return; }
@@ -7913,6 +8129,13 @@ $('#shot-close').addEventListener('click', () => { $('#shot').hidden = true; });
 $('#emo-pet').addEventListener('click', petTrick);
 $('#post-close').addEventListener('click', closePost);
 $('#rp-close').addEventListener('click', closeRoomPick);
+$('#xm-close').addEventListener('click', closeXmas);
+$('#xmas').addEventListener('click', e => { if (e.target.id === 'xmas') closeXmas(); });
+for (const b of $$('#xmas [data-xt]')) b.addEventListener('click', () => { xmasTab = b.dataset.xt; renderXmas(); });
+$('#xm-kinds').addEventListener('click', e => { const b = e.target.closest('[data-ok]'); if (b) { $('#xm-kinds').dataset.v = b.dataset.ok; renderXmas(); sfx('pop'); } });
+$('#xm-cols').addEventListener('click', e => { const b = e.target.closest('[data-oc]'); if (b) { $('#xm-cols').dataset.v = b.dataset.oc; renderXmas(); sfx('pop'); } });
+$('#xm-hang').addEventListener('click', hangOrnament);
+$('#chip-xmas').addEventListener('click', () => openXmas());
 $('#roompick').addEventListener('click', e => { if (e.target.id === 'roompick') closeRoomPick(); });
 $('#rb-leave').addEventListener('click', leaveRoom);
 $('#rb-edit').addEventListener('click', roomEditStart);
@@ -7928,6 +8151,7 @@ for (const b of $$('#post [data-pt]')) b.addEventListener('click', () => { postT
 $('#post-designs').addEventListener('click', e => { const b = e.target.closest('[data-cd]'); if (b) { $('#post-designs').dataset.v = b.dataset.cd; syncPostWrite(); sfx('pop'); } });
 $('#post-tx').addEventListener('input', syncPostWrite);
 $('#post-to').addEventListener('change', syncPostWrite);
+$('#post-an').addEventListener('change', syncPostWrite);
 $('#post-send').addEventListener('click', sendPost);
 $('#chip-post').addEventListener('click', () => openPost('inbox'));
 {
@@ -8212,7 +8436,7 @@ function updateHud(now) {
     html = `${keyHtml}${esc(ctx.text)}`;
     if (ctx.dim && !(touchUi && ctx.dim.startsWith('F '))) html += `<span class="dim">${esc(ctx.dim)}</span>`;
     if (ctx.view && !rolling) html += `<span class="dim">${touchUi ? '' : 'C '}「${esc(ctx.view.item.nm)}」 보기</span>`;
-    actLabel = { stack: '올리기', give: '올려주기', base: '받침 세우기', drop: '내려놓기', pick: '집기', decorate: '꾸미기', roll: '굴리기', giant: '보태기', sledOn: '썰매 타기', sledOff: '내리기', enter: '들어가기', leave: '나가기', booth: '촬영하기', boothJoin: '같이 찍기', mirror: '거울 · 소품', fish: '낚시하기', fishWait: '당기기', fishHook: '당기기!', fishReel: '감기', petAdopt: '친구 하기', petBye: '데려다주기', post: '우체국', roomDoor: '내 방', roomLeave: '나가기', snack: '간식 받기', sit: '앉기', stand: '일어나기', eat: P.food ? FOODS[P.food.k].verb : '먹기', arenaJoin: '참가하기', none: '—', blocked: '못 보태요', toobig: '안 올라가요', full: '가득 찼어요', rebase: '새로 세우기' }[ctx.kind] || '굴리기';
+    actLabel = { stack: '올리기', give: '올려주기', base: '받침 세우기', drop: '내려놓기', pick: '집기', decorate: '꾸미기', roll: '굴리기', giant: '보태기', sledOn: '썰매 타기', sledOff: '내리기', enter: '들어가기', leave: '나가기', booth: '촬영하기', boothJoin: '같이 찍기', mirror: '거울 · 소품', fish: '낚시하기', fishWait: '당기기', fishHook: '당기기!', fishReel: '감기', petAdopt: '친구 하기', petBye: '데려다주기', post: '우체국', roomDoor: '내 방', roomLeave: '나가기', xmas: '장식 달기', snack: '간식 받기', sit: '앉기', stand: '일어나기', eat: P.food ? FOODS[P.food.k].verb : '먹기', arenaJoin: '참가하기', none: '—', blocked: '못 보태요', toobig: '안 올라가요', full: '가득 찼어요', rebase: '새로 세우기' }[ctx.kind] || '굴리기';
     promptWarn = !!ctx.warn;
     const tv = $('#t-view'); const s = nearestSnowman(4); tv.hidden = !s;
   }
@@ -9143,6 +9367,7 @@ const SIGNS = [
 ];
 for (const sg of SIGNS) setText(sg.lb, 'nm', sg.lb.nmText, sg.text);
 updateRecSigns();
+buildOrnaments();
 stylizeScene();
 applyQuality();
 initPost();
