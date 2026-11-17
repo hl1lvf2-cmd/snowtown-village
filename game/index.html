@@ -434,7 +434,8 @@ body.touch.card-open #touch, body.touch.card-open #chat, body.touch.card-open #c
   #photo .snap-bar { left: auto; right: calc(8px + env(safe-area-inset-right)); transform: none; top: calc(8px + env(safe-area-inset-top)); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(290px, 38vw); align-content: start; overflow-y: auto; }
   .shot-card { width: min(780px, 100%); grid-template-columns: minmax(0, 1fr) minmax(200px, 250px); grid-template-rows: auto auto auto 1fr; align-items: start; column-gap: 14px; padding: 12px; }
   .shot-card .sheet-head { grid-column: 2; grid-row: 1; }
-  #shot-img, #shot-live { grid-column: 1; grid-row: 1 / span 4; max-height: calc(100vh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  #shot-print, #shot-live { grid-column: 1; grid-row: 1 / span 4; }
+  #shot-img, #shot-dev, #shot-live { max-height: calc(100vh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
   .shot-mode { grid-column: 2; grid-row: 2; }
   .shot-btns { grid-column: 2; grid-row: 3; grid-template-columns: 1fr; }
   #shot-note { grid-column: 2; grid-row: 4; font-size: 11.5px; }
@@ -828,7 +829,26 @@ body.indoor #t-throw { visibility: hidden; }
 body.snap-busy .snap-bar, body.snap-busy .snap-top { opacity: 0; pointer-events: none; }
 .shot-card { width: min(520px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 16px; display: grid; gap: 12px; border-radius: 20px; }
 .shot-card h2 { font-family: var(--font-display); font-weight: 400; font-size: 26px; margin: 0; }
-#shot-img, #shot-live { width: 100%; max-height: 58vh; object-fit: contain; border-radius: 10px; background: #0d1528; }
+#shot-img, #shot-live, #shot-dev { width: 100%; max-height: 58vh; object-fit: contain; border-radius: 10px; background: #0d1528; display: block; }
+#shot-img[hidden], #shot-dev[hidden], #shot-print[hidden] { display: none; }
+/* 사진 나오는 모습: 폴라로이드는 카메라 틈에서 스르륵 나와 서서히 색이 올라오고, 사진만 찍으면 화면에서 톡 튀어나옴 */
+#shot-print { position: relative; display: grid; justify-items: center; min-width: 0; }
+.shot-slot { display: none; width: 78%; height: 16px; border-radius: 9px; background: #1b1e26; box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.6), 0 2px 0 rgba(255, 255, 255, 0.15); position: relative; z-index: 2; transition: opacity 0.4s; }
+.shot-out { width: 100%; overflow: hidden; border-radius: 10px; }
+#shot-print.eject .shot-slot { display: block; }
+#shot-print.eject .shot-out { margin-top: -8px; }
+#shot-print.eject .shot-out > * { animation: shotout 1.35s cubic-bezier(.3, .7, .3, 1) both; }
+@keyframes shotout { from { transform: translateY(-101%); } to { transform: translateY(0); } }
+#shot-print.pop .shot-out > * { animation: shotpop 0.5s cubic-bezier(.2, .9, .3, 1.15) both; }
+@keyframes shotpop { from { transform: scale(1.22); opacity: 0; filter: brightness(2.2); } }
+#snap-fl { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; }
+#snap-fl .fl-i { filter: grayscale(1); opacity: 0.55; }
+#snap-fl[aria-pressed="true"] { background: #ffe58a; color: #2a2f3a; border-color: #ffd34d; }
+#snap-fl[aria-pressed="true"] .fl-i { filter: none; opacity: 1; }
+#snap-flash.shut { background: #05070d; }
+#snap-flash.shut.on { opacity: 0.55; }
+@media (max-width: 700px) { #snap-fl .fl-t { display: none; } #snap-fl { width: 44px; justify-content: center; padding: 0; } }
+@media (prefers-reduced-motion: reduce) { #shot-print .shot-out > * { animation: none !important; } }
 #shot-live[hidden] { display: none; }
 .shot-mode { display: flex; gap: 6px; justify-content: center; }
 .shot-mode .pill { flex: 1; max-width: 200px; }
@@ -1125,6 +1145,7 @@ body.touch .keys.desk { display: none; }
         <button class="pill" type="button" id="snap-reset" title="각도·거리 처음대로" aria-label="다시 맞추기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg><span>다시 맞추기</span></button>
       </div>
       <div class="snap-row snap-go">
+        <button id="snap-fl" class="btn" type="button" aria-pressed="false" title="플래시 켜기/끄기"><span class="fl-i" aria-hidden="true">⚡</span><span class="fl-t">플래시 끔</span></button>
         <button id="snap-timer" class="btn" type="button">3초 뒤 찍기</button>
         <button id="photo-save" class="btn primary" type="button">찍기</button>
       </div>
@@ -1237,7 +1258,10 @@ body.touch .keys.desk { display: none; }
   <div id="shot" class="modal" hidden>
     <div class="modal-card glass shot-card" role="dialog" aria-labelledby="shot-title">
       <div class="sheet-head" style="padding:0"><h2 id="shot-title">찰칵!</h2><button class="x" id="shot-close" type="button" aria-label="사진 닫기">×</button></div>
-      <img id="shot-img" alt="방금 찍은 사진">
+      <div id="shot-print">
+        <div class="shot-slot" aria-hidden="true"></div>
+        <div class="shot-out"><img id="shot-img" alt="방금 찍은 사진"><canvas id="shot-dev" aria-hidden="true" hidden></canvas></div>
+      </div>
       <canvas id="shot-live" aria-label="움직이는 네컷" hidden></canvas>
       <div class="shot-mode snap-row" id="shot-mode" role="group" aria-label="보기" hidden>
         <button class="pill" type="button" data-sm="photo">📷 사진</button>
@@ -6960,11 +6984,23 @@ function renderGuide(pw, ph) {
   }
   return out;
 }
-function snapFlash() { const fl = $('#snap-flash'); fl.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('on'))); }
+// 찰칵: 플래시를 켜면 하얗게 번쩍, 끄면 셔터처럼 잠깐 어두워짐
+function snapFlash(on = snapFl) { const fl = $('#snap-flash'); fl.classList.toggle('shut', !on); fl.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('on'))); }
+// 플래시: 카메라 자리에서 터지는 빛. 조명 수가 바뀌면 모든 재질을 다시 만들어 끊기므로, 늘 켜 둔 채 세기만 0으로 둠
+let snapFl = LS.get('snapFlash', false);
+const flashPL = new THREE.PointLight('#fff3e2', 0, 30, 2); scene.add(flashPL);
+function syncFlashBtn() { const b = $('#snap-fl'); b.setAttribute('aria-pressed', String(snapFl)); b.querySelector('.fl-t').textContent = snapFl ? '플래시 켬' : '플래시 끔'; }
 async function snapCapture() {
   if (!photo) return;
   const d = snapDims(), { names, e } = snapSubjects();
-  const shot = renderGuide(d.pw, d.ph); if (!shot) return;
+  if (snapFl) {
+    // 카메라 살짝 위에서 터뜨려 가까운 얼굴은 환하게, 먼 배경은 덜 밝게(밤에는 더 세게)
+    flashPL.position.copy(camera.position); flashPL.position.y += 0.35;
+    flashPL.intensity = themeName === 'night' || inStudio(P.pos.x, P.pos.z) ? 9 : 4;
+  }
+  let shot;
+  try { shot = renderGuide(d.pw, d.ph); } finally { flashPL.intensity = 0; }
+  if (!shot) return;
   const out = makeCanvas(d.W, d.H);
   { const g = out.getContext('2d'); g.fillStyle = '#f7f4ee'; g.fillRect(0, 0, d.W, d.H); g.drawImage(shot, d.pad, d.pad); }
   const g = out.getContext('2d'), cap = snapCaption(names, e);
@@ -6985,7 +7021,8 @@ async function snapCapture() {
   if (!blob) { toast('사진을 만들지 못했어요.'); return; }
   const safe = (e ? e.item.nm : '친구들').replace(/[\\/:*?"<>|]/g, '').trim() || '눈사람';
   if (lastShot && lastShot.url) URL.revokeObjectURL(lastShot.url);
-  lastShot = { blob, url: URL.createObjectURL(blob), name: `눈사람마을-${safe}-${Date.now() % 100000}.jpg`, names, title: cap.title };
+  lastShot = { blob, url: URL.createObjectURL(blob), name: `눈사람마을-${safe}-${Date.now() % 100000}.jpg`, names, title: cap.title,
+    anim: snapFrame === 'polaroid' ? 'polaroid' : 'pop', canvas: out, rect: [d.pad, d.pad, d.pw, d.ph] };
   showShot(); mission('photo');
 }
 function shareUrl() {
@@ -7002,7 +7039,7 @@ function setShotMode(m) {
   const live = m === 'live' && lastShot && lastShot.live;
   SHOT_LIVE.on = !!live;
   for (const b of $$('#shot-mode [data-sm]')) b.setAttribute('aria-pressed', String(b.dataset.sm === (live ? 'live' : 'photo')));
-  $('#shot-img').hidden = !!live; $('#shot-live').hidden = !live;
+  $('#shot-print').hidden = !!live; $('#shot-live').hidden = !live;
   if (!SHOT_LIVE.busy) $('#shot-save').textContent = live ? '영상 저장' : '사진 저장';
   cancelAnimationFrame(SHOT_LIVE.raf);
   if (!live) return;
@@ -7049,6 +7086,39 @@ function showShot() {
   if (lastShot.live) $('#shot-note').textContent += ' 🎞️ 움직이는 네컷을 누르면 영상으로도 저장할 수 있어요.';
   $('#shot').hidden = false;
   setShotMode('photo');
+  printShot();
+}
+// 사진이 나오는 모습. 처음 한 번만(사진을 다시 열 땐 바로 보임)
+const SHOT_DEV = { raf: 0 };
+function printShot() {
+  const pr = $('#shot-print'), img = $('#shot-img'), dev = $('#shot-dev'), sh = lastShot, anim = sh.anim;
+  cancelAnimationFrame(SHOT_DEV.raf);
+  pr.classList.remove('eject', 'pop', 'done'); dev.hidden = true; img.hidden = false;
+  sh.anim = null;
+  if (!anim || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  void pr.offsetWidth;
+  if (anim === 'pop') { pr.classList.add('pop'); return; }
+  // 폴라로이드: 틈에서 스르륵 나오고, 사진 칸은 어두운 회갈색에서 서서히 색이 올라옴(테두리는 처음부터 하양)
+  const c = sh.canvas, [rx, ry, rw, rh] = sh.rect, g = dev.getContext('2d');
+  dev.width = c.width; dev.height = c.height;
+  const draw = p => {
+    g.drawImage(c, 0, 0);
+    const a = Math.pow(1 - p, 1.5);
+    if (a > 0.004) { g.fillStyle = `rgba(48,52,62,${0.97 * a})`; g.fillRect(rx, ry, rw, rh); }
+    const w = Math.sin(Math.PI * p) * 0.22 * (1 - p * 0.6);
+    if (w > 0.004) { g.fillStyle = `rgba(150,112,70,${w})`; g.fillRect(rx, ry, rw, rh); }
+  };
+  draw(0); dev.hidden = false; img.hidden = true;
+  pr.classList.add('eject'); sfx('print');
+  const t0 = performance.now();
+  const tick = () => {
+    if ($('#shot').hidden || lastShot !== sh) { dev.hidden = true; img.hidden = false; pr.classList.remove('eject'); return; }
+    const p = clamp((performance.now() - t0 - 900) / 2600, 0, 1);
+    draw(p);
+    if (p < 1) SHOT_DEV.raf = requestAnimationFrame(tick);
+    else { pr.classList.remove('eject'); dev.hidden = true; img.hidden = false; }   // eject를 먼저 빼야 사진이 다시 미끄러져 나오지 않음
+  };
+  SHOT_DEV.raf = requestAnimationFrame(tick);
 }
 async function saveShot() {
   if (!lastShot) return;
@@ -8546,6 +8616,8 @@ $('#card-del').addEventListener('click', () => {
 $('#photo-exit').addEventListener('click', exitPhoto);
 $('#photo-save').addEventListener('click', () => startSnap(0));
 $('#snap-timer').addEventListener('click', () => startSnap(3));
+$('#snap-fl').addEventListener('click', () => { snapFl = !snapFl; LS.set('snapFlash', snapFl); syncFlashBtn(); sfx('pop'); if (snapFl) snapFlash(true); });
+syncFlashBtn();
 $('#btn-photo').addEventListener('click', () => { if (mode === 'photo') exitPhoto(); else { const s = nearestSnowman(6); enterPhoto(s ? s.key : null); } });
 $('#t-photo').addEventListener('click', () => { const s = nearestSnowman(6); enterPhoto(s ? s.key : null); });
 $('#snap-pose').addEventListener('click', e => { const b = e.target.closest('[data-pose]'); if (b && photo && photo.withMe) setPose(b.dataset.pose); });
