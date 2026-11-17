@@ -1330,7 +1330,7 @@ body.touch .keys.desk { display: none; }
         <li><b>E</b>로 하얀 눈밭에서 눈덩이를 굴려요. 지름 54cm가 넘으면 받침을 세우고, 더 작은 눈덩이를 올려 세 덩이까지 쌓아요. 큰 눈덩이일수록 굴리는 데 오래 걸리고, 올릴 때 흔들리는 눈덩이를 초록 칸에 맞춰 내려놓아야 해요. 높이 쌓을수록 칸이 좁아져요.</li>
         <li>친구 받침 옆에서 <b>E</b>를 누르면 내 눈덩이를 올려줄 수 있어요. 두 덩이 이상이면 꾸미고 이름을 붙여 완성해요. 얼굴을 직접 그릴 수도 있어요.</li>
         <li>매주 월요일에 새 <b>주간 대회</b>가 열려요. 주제에 어울리는 눈사람에 좋아요를 눌러 주세요. 지난주 1위는 광장 북쪽 명예의 전당에 동상으로 남아요.</li>
-        <li>눈사람은 5일 동안 아무도 눈을 보충하지 않으면 녹기 시작해서, 12일째엔 물웅덩이가 돼요. 카드의 <b>눈 보충</b>으로 친구 눈사람도 지켜 줄 수 있어요.</li>
+        <li>눈사람은 12시간 동안 아무도 눈을 보충하지 않으면 녹기 시작해서, 36시간이 지나면 물웅덩이가 돼요. 카드의 <b>눈 보충</b>으로 친구 눈사람도 지켜 줄 수 있어요.</li>
         <li>광장 남서쪽 <b>공동 눈사람</b>에 눈덩이를 보태면 다 같이 거대한 눈사람을 완성해요.</li>
         <li>광장 남쪽 <b>모닥불 쉼터</b>에선 통나무에 앉아 쉬고, 겨울 포차에서 핫초코·떡볶이·라면·군고구마를 받아 친구들과 같이 먹어요. 가까이에서 둘이 같이 <b>짠</b>(5)을 누르면 건배해요.</li>
         <li>광장 남서쪽 오두막은 <b>눈사람 사진관</b>이에요. 부스 앞 키오스크에서 시작하면 10초마다 8번 찍고, 4장을 골라 겨울 프레임으로 뽑아요. 부스가 3개라 여러 팀이 같이 찍을 수 있어요.</li>
@@ -1537,7 +1537,9 @@ const WEEK_THEMES = ['가장 웃긴 눈사람', '제일 멋쟁이 눈사람', '�
 const defaultTheme = t => { const n = WEEK_THEMES.length; return WEEK_THEMES[((Math.floor(weekStart(t) / (7 * DAY)) % n) + n) % n]; };
 const WK_START = weekStart(Date.now()), WK = weekKeyOf(WK_START);
 const LAST_WK_START = weekStart(WK_START - DAY), LAST_WK = weekKeyOf(LAST_WK_START);
-const MELT_START = 5 * DAY, MELT_END = 12 * DAY, PUDDLE_END = 16 * DAY;
+// 눈을 마지막으로 쌓거나 보충한 뒤 12시간은 꽁꽁, 그 뒤 24시간 동안 녹아 36시간이면 물웅덩이. 웅덩이는 3일 더 남아 그동안 보충하면 다시 세워짐
+const HOUR = 3600000, MELT_START = 12 * HOUR, MELT_END = 36 * HOUR, PUDDLE_END = MELT_END + 3 * DAY;
+const leftText = ms => ms >= 2 * DAY ? `${Math.ceil(ms / DAY)}일` : ms >= HOUR ? `${Math.ceil(ms / HOUR)}시간` : `${Math.max(1, Math.ceil(ms / 60000))}분`;
 const ARENA = { x: 0, z: -58, w: 34, d: 24, y: 0.5 };
 const SLED = { x: -62, z: 20, h: 9, s: 11 };
 const GIANT = { x: -22, z: 14, target: 40 };
@@ -2974,9 +2976,11 @@ function decorateModel(g, b, cs, d) {
   if (d.k && d.k !== 'none') at('cheek_' + d.k, hr, hc);
   if (d.n !== 'none') at('nose_' + d.n, hr, hc);
   if (d.h !== 'none') {
-    const o = at('hat_' + d.h, hr, hc);
-    // 눈썹이 있으면 털모자·야구모자를 살짝 올려 써서 눈썹이 보이게
-    if (o && !d.f && d.br && d.br !== 'none') { if (d.h === 'beanie') { o.position.y += hr * 0.3; o.scale.multiplyScalar(0.97); } else if (d.h === 'cap') o.position.y += hr * 0.05; }
+    const o = at('hat_' + d.h, hr, hc), hb = !!d.f || (d.br && d.br !== 'none');
+    // 털모자: 모델 그대로면 챙이 머리 한가운데(눈 높이)까지 내려와 눈·눈썹을 덮고, 울퉁불퉁한 눈이 모자 옆을 뚫고 나옴.
+    // 챙 아랫단을 눈 위(눈썹·그린 얼굴이면 눈썹 위)에 맞추고 머리를 넉넉히 감싸게 키움
+    if (o && d.h === 'beanie') { const sx = hb ? 1.0 : 1.05, sy = hb ? 0.8 : 0.85; o.scale.set(hr * sx, hr * sy, hr * sx); o.position.y = hc + hr * ((hb ? 0.42 : 0.27) + 0.056 * sy); }
+    else if (o && hb && d.h === 'cap') o.position.y += hr * 0.05;
   }
   if (d.s && n >= 2) at(d.s === 2 ? 'scarf_stripe' : 'scarf', ringR, neckY, acc2, acc2);   // 목도리는 두 번째 색
   if (d.a !== 'none') at('arm_' + d.a, br, bc);
@@ -3056,10 +3060,11 @@ function decorate(g, b, cs, d) {
     put(h, mesh(GEO.cyl, MAT.black, 0, hr * 0.45, 0, hr * 0.56, hr * 0.9, hr * 0.56));
     put(h, mesh(GEO.cyl, acc, 0, hr * 0.12, 0, hr * 0.575, hr * 0.16, hr * 0.575));
   } else if (d.h === 'beanie') {
-    const h = new THREE.Group(); h.position.y = hc + hr * 0.12; g.add(h);
-    put(h, mesh(GEO.hemi, acc, 0, 0, 0, hr * 0.87));
-    put(h, mesh(GEO.torus, acc, 0, 0, 0, hr * 0.86)).rotation.x = Math.PI / 2;
-    put(h, mesh(GEO.sphere, MAT.knit, 0, hr * 0.96, 0, hr * 0.2));
+    const hb = !!d.f || (d.br && d.br !== 'none');
+    const h = new THREE.Group(); h.position.y = hc + hr * (hb ? 0.44 : 0.3); h.scale.set(1.06, 0.85, 1.06); g.add(h);
+    put(h, mesh(GEO.hemi, acc, 0, 0, 0, hr * 0.9));
+    put(h, mesh(GEO.torus, acc, 0, 0, 0, hr * 0.9)).rotation.x = Math.PI / 2;
+    put(h, mesh(GEO.sphere, MAT.knit, 0, hr * 0.98, 0, hr * 0.2));
   } else if (d.h === 'bucket') {
     const h = new THREE.Group(); h.position.y = yb - hr * 0.06; h.rotation.z = -0.14; g.add(h);
     put(h, mesh(GEO.cylTaper, MAT.bucket, 0, hr * 0.37, 0, hr * 0.62, hr * 0.75, hr * 0.62));
@@ -3117,16 +3122,66 @@ function decorate(g, b, cs, d) {
     for (const s of [-1, 1]) put(g, mesh(GEO.sphere, acc, s * hr * 0.98, hc + hr * 0.05, 0, hr * 0.13, hr * 0.24, hr * 0.24));
   }
 }
-function buildSnowman(it) {
-  const g = new THREE.Group();
-  const cs = ballCenters(it.b);
+// mk(0~1): 녹은 정도. 위 덩이부터 더 작아지고, 덩이끼리 주저앉아 겹치고, 납작해지며 한쪽으로 기울어짐.
+// 모자는 미끄러지고 코는 처지고 팔은 내려앉음. 발밑엔 질척한 눈과 물웅덩이가 넓어지고, 몸에 물방울이 맺힘
+const MELT_WATER = mat('#a9d3ef', { transparent: true, opacity: 0.8, emissive: '#5d8fb5', emissiveIntensity: 0.18 });
+const MELT_SLUSH = mat('#dbe9f2');
+// 녹는 눈덩이 모양: 위는 납작해지고 아래는 치마처럼 퍼지며, 몇 군데 물이 흘러내린 자국이 아래로 늘어짐(20단계로 만들어 둠)
+const MELT_GEO = new Map();
+function meltBallGeo(i, mk) {
+  const step = Math.round(clamp(mk, 0, 1) * 20), key = i * 100 + step;
+  if (MELT_GEO.has(key)) return MELT_GEO.get(key);
+  const k = step / 20, g = GEO.ball[i].clone(), p = g.attributes.position, v = new THREE.Vector3();
+  for (let j = 0; j < p.count; j++) {
+    v.fromBufferAttribute(p, j);
+    const y = v.y, a = Math.atan2(v.z, v.x), low = smooth(0.3, -0.85, y);
+    const drip = Math.pow(Math.max(0, Math.sin(a * 5 + i * 1.3)), 8) * smooth(0.15, -0.55, y) * (1 - smooth(-0.75, -1, y));
+    const r = 1 + k * (0.3 * low - 0.07 * (1 - low)) + k * 0.05 * drip;
+    v.x *= r; v.z *= r; v.y = y * (1 - k * (y > 0 ? 0.22 : 0.1)) - k * 0.16 * drip;
+    p.setXYZ(j, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals(); MELT_GEO.set(key, g); return g;
+}
+function meltCenters(b, mk) {
+  const c = [], sag = 1 - 0.2 * mk; let y = 0;
+  b.forEach((r, i) => { y = i === 0 ? r * 0.82 * (1 - 0.35 * mk) : y + (b[i - 1] * 0.8 + r * 0.8) * sag; c.push(y); });
+  return c;
+}
+function buildSnowman(it, mk = 0) {
+  const g = new THREE.Group(), n = it.b.length;
+  const b = mk > 0 ? it.b.map((r, i) => r * (1 - mk * (0.16 + 0.2 * (n > 1 ? i / (n - 1) : 0)))) : it.b;
+  const cs = mk > 0 ? meltCenters(b, mk) : ballCenters(b);
   const sm = snowMat(it.d && it.d.w);
-  it.b.forEach((r, i) => { const m = mesh(GEO.ball[i % 3], sm, 0, cs[i], 0, r); m.rotation.y = i * 1.7; m.castShadow = true; m.receiveShadow = true; g.add(m); });
-  if (it.d) decorate(g, it.b, cs, it.d);
+  b.forEach((r, i) => {
+    const m = mesh(mk > 0 ? meltBallGeo(i % 3, mk * (i === 0 ? 1 : 0.8)) : GEO.ball[i % 3], sm, 0, cs[i], 0, r); m.rotation.y = i * 1.7; m.castShadow = true; m.receiveShadow = true; g.add(m);
+  });
+  if (it.d) decorate(g, b, cs, it.d);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  const mound = mesh(GEO.sphere, MAT.snow, 0, 0.02, 0, it.b[0] * 1.22, it.b[0] * 0.2, it.b[0] * 1.22); mound.receiveShadow = true; g.add(mound);
-  g.userData.top = cs[cs.length - 1] + it.b[it.b.length - 1];
-  g.userData.centers = cs;
+  const b0 = b[0];
+  const mound = mesh(GEO.sphere, mk > 0.35 ? MELT_SLUSH : MAT.snow, 0, 0.02, 0, b0 * 1.22 * (1 + 0.3 * mk), b0 * 0.2 * (1 + 1.1 * mk), b0 * 1.22 * (1 + 0.3 * mk)); mound.receiveShadow = true; g.add(mound);
+  if (mk > 0) {
+    const hi = n - 1, hr = b[hi], hc = cs[hi];
+    for (const c of g.children) {
+      const nm = c.name || '';
+      if (nm.startsWith('hat_')) { c.rotation.z += 0.6 * mk; c.position.x -= hr * 0.32 * mk; c.position.y -= hr * 0.2 * mk; }
+      else if (nm.startsWith('nose_')) c.rotation.x += 0.55 * mk;
+      else if (nm.startsWith('arm_')) { c.position.y -= b[n >= 3 ? 1 : 0] * 0.22 * mk; c.rotation.z += 0.12 * mk; }
+    }
+    // 물웅덩이
+    const pw = mesh(GEO.cyl, MELT_WATER, b0 * 0.12 * mk, 0.012, b0 * 0.08 * mk, b0 * (1.15 + 0.75 * mk), 0.02, b0 * (1.0 + 0.6 * mk)); pw.receiveShadow = true; g.add(pw);
+    // 몸에 맺힌 물방울
+    if (mk > 0.2) {
+      const rng = mulberry32(hashStr(String(it.id || it.nm || 'x')) + 7), cnt = Math.round(2 + mk * 6);
+      for (let k = 0; k < cnt; k++) {
+        const i = Math.floor(rng() * n), r = b[i], dx = (rng() - 0.5) * 1.3, dy = -0.15 - rng() * 0.5;
+        const f = onSurface(g, cs[i], r * (1 + 0.12 * mk), dx, dy); f.rotation.y += (rng() - 0.5) * 2.2;
+        put(f, mesh(GEO.sphere, MAT.icicle, 0, -r * 0.05, 0, r * 0.035, r * (0.07 + 0.05 * mk), r * 0.035));
+      }
+    }
+    g.rotation.z = 0.06 * mk;
+    g.userData.top = hc + hr * (1 - mk * 0.18);
+  } else g.userData.top = cs[n - 1] + b[n - 1];
+  g.userData.centers = cs; g.userData.radii = b;
   return g;
 }
 function cleanDeco(d) {
@@ -5209,6 +5264,18 @@ function updateParticles(dt) {
   if (!any) P_.alive = Math.max(0, P_.alive - 1);
 }
 const puff = p => burst(p.x, p.y, p.z, 10, ['#ffffff', '#e6eef8'], 2.2, 2.2, 0.09, 0.6);
+// 녹는 눈사람: 가까이 있으면 몸에서 물방울이 똑똑 떨어짐(많이 녹을수록 자주)
+let dripAt = 0;
+function meltDrips(dt) {
+  dripAt -= dt; if (dripAt > 0) return; dripAt = 0.35;
+  for (const e of SM.values()) {
+    if (!(e.meltK > 0.05) || !e.spheres.length) continue;
+    const dx = e.x - camera.position.x, dz = e.z - camera.position.z;
+    if (dx * dx + dz * dz > 400 || Math.random() > 0.25 + e.meltK * 0.6) continue;
+    const sp = e.spheres[Math.floor(Math.random() * e.spheres.length)], a = Math.random() * TAU, rr = sp[3] * 0.8;
+    burst(sp[0] + Math.cos(a) * rr, sp[1] - sp[3] * 0.35, sp[2] + Math.sin(a) * rr, 1, ['#d6ecfb', '#ffffff'], 0.05, 0.05, 0.035, 0.45);
+  }
+}
 const CONFETTI = ['#ff8a3d', '#f2c14e', '#4fb0e6', '#f27bb0', '#ffffff', '#5ee08f'];
 
 const projPool = [], projs = [];
@@ -5352,7 +5419,7 @@ function reconcileSnowmen() {
   }
   for (const [k, e] of SM) if (!want.has(k)) { disposeSm(e); SM.delete(k); }
   for (const [k, w] of want) {
-    const sig = JSON.stringify(w.item) + (w.melt ? '|' + (w.melt.melted ? 'M' : Math.round(w.melt.k * 10)) : '') + (w.hall ? '|h' : '');
+    const sig = JSON.stringify(w.item) + (w.melt ? '|' + (w.melt.melted ? 'M' : Math.round(w.melt.k * 20)) : '') + (w.hall ? '|h' : '');
     const e = SM.get(k);
     if (e && e.sig === sig) { e.nk = w.nk; continue; }
     if (e) disposeSm(e);
@@ -5383,30 +5450,34 @@ function createSm(w, sig) {
   const it = w.item, mi = w.melt;
   const gy0 = groundY(it.x, it.z);
   const extra = [];
-  let g, top, cs, scale = 1, sy = 1, lift = 0;
+  let g, top, cs, rad = it.b, scale = 1, sy = 1, lift = 0;
   if (mi && mi.melted) { g = buildPuddle(it); top = 0.3; cs = [0.1]; }
   else {
-    const full = buildSnowman(it);
-    top = full.userData.top; cs = full.userData.centers;
+    const mk = mi && !w.hall && !w.giant ? mi.k : 0;
+    const full = buildSnowman(it, mk);
+    top = full.userData.top; cs = full.userData.centers; rad = full.userData.radii;
     if (w.giant) g = full;
-    else { g = new THREE.LOD(); g.addLevel(full, 0); g.addLevel(buildSimple(it), QUAL().lodNear); g.addLevel(new THREE.Object3D(), QUAL().lodFar); }
+    else {
+      const simple = buildSimple(it); if (mk > 0) simple.scale.set(1 - 0.25 * mk, 1 - 0.38 * mk, 1 - 0.25 * mk);
+      g = new THREE.LOD(); g.addLevel(full, 0); g.addLevel(simple, QUAL().lodNear); g.addLevel(new THREE.Object3D(), QUAL().lodFar);
+    }
     if (w.hall) {
       scale = sy = Math.min(0.8, 0.85 / it.b[0]); lift = 0.72;
       const ped = mesh(GEO.cyl, MAT.stone, it.x, gy0 + 0.34, it.z, 1.2, 0.72, 1.2); ped.castShadow = ped.receiveShadow = true;
       const rim = mesh(GEO.cyl, MAT.gold, it.x, gy0 + 0.72, it.z, 1.24, 0.05, 1.24);
       scene.add(ped, rim); extra.push(ped, rim);
       g.scale.setScalar(scale);
-    } else if (mi && mi.k > 0) { scale = 1 - 0.3 * mi.k; sy = scale * (1 - 0.12 * mi.k); g.scale.set(scale, sy, scale); }
+    }
   }
   g.position.set(it.x, gy0 - 0.02 + lift, it.z); g.rotation.y = it.ry;
-  if (mi && mi.k > 0 && !mi.melted) g.rotation.z = 0.07 * mi.k;
   g.userData.smKey = w.key;
   scene.add(g);
   const lb = makeLabel('sm' + (w.village ? ' village' : '') + (w.hall ? ' hallp' : '') + (mi && mi.melted ? ' melted' : ''));
   const e = {
     ...w, sig, group: g, label: lb, extra, x: it.x, z: it.z, ry: it.ry, gy: gy0 + lift,
-    baseR: w.hall ? 1.25 : mi && mi.melted ? 0.15 : it.b[0] * scale, top: top * sy, realTop: top, melted: !!(mi && mi.melted),
-    spheres: mi && mi.melted ? [] : it.b.map((r, i) => [it.x, gy0 + lift + cs[i] * sy, it.z, r * scale]), likes: 0,
+    baseR: w.hall ? 1.25 : mi && mi.melted ? 0.15 : rad[0] * scale, top: top * sy, realTop: rad !== it.b && !(mi && mi.melted) ? smTop(it.b) : top, melted: !!(mi && mi.melted),
+    meltK: mi && !mi.melted && !w.hall && !w.giant ? mi.k : 0,
+    spheres: mi && mi.melted ? [] : rad.map((r, i) => [it.x, gy0 + lift + cs[i] * sy, it.z, r * scale]), likes: 0,
     mine: w.mine || (NET.uid && w.uid === NET.uid) || w.local,
   };
   SM.set(w.key, e);
@@ -6557,8 +6628,8 @@ function renderCard() {
     $('#card-melt-bar').style.width = `${(1 - mi.k) * 100}%`;
     mbox.classList.toggle('warn', mi.k > 0);
     $('#card-melt-t').textContent = mi.melted ? '다 녹았어요. 눈을 보충하면 다시 세워져요'
-      : mi.k > 0 ? `녹는 중 · ${Math.max(1, Math.ceil(mi.left / DAY))}일 뒤 물웅덩이`
-      : `꽁꽁 · ${Math.max(1, Math.ceil((MELT_START - (mi.age || 0)) / DAY))}일 뒤부터 녹아요`;
+      : mi.k > 0 ? `녹는 중 · ${leftText(mi.left)} 뒤 물웅덩이`
+      : `꽁꽁 · ${leftText(MELT_START - (mi.age || 0))} 뒤부터 녹아요`;
   }
   const rf = $('#card-refill');
   rf.hidden = !mi;
@@ -6647,7 +6718,7 @@ function refill(key) {
     writeDoc('refill/' + NET.uid, { r, t: now }); ingestRefill();
   }
   burst(e.x, e.gy + 0.8, e.z, 40, ['#ffffff', '#e6eef8', '#cfe6ff'], 3, 4, 0.12, 1.1); sfx('pop');
-  toast(e.mine ? '눈을 소복이 보충했어요. 다시 12일 동안 끄떡없어요.' : `${displayNick(e)}님 눈사람에 눈을 보충해 줬어요.`);
+  toast(e.mine ? '눈을 소복이 보충했어요. 다시 36시간 동안 끄떡없어요.' : `${displayNick(e)}님 눈사람에 눈을 보충해 줬어요.`);
   mission('refill');
   reconcileSnowmen();
 }
@@ -7964,7 +8035,7 @@ function showNews() {
   for (const e of mineE) {
     const mi = meltInfo(e.item, e.key);
     if (mi.melted) items.push({ text: `「${e.item.nm}」가 다 녹았어요. 며칠 안에 눈을 보충하면 다시 세워져요.`, label: '가 보기', fn: () => visit(e.key) });
-    else if (mi.k > 0) items.push({ text: `「${e.item.nm}」가 녹고 있어요. ${Math.max(1, Math.ceil(mi.left / DAY))}일 안에 눈을 보충해 주세요.`, label: '보충하러 가기', fn: () => visit(e.key) });
+    else if (mi.k > 0) items.push({ text: `「${e.item.nm}」가 녹고 있어요. ${leftText(mi.left)} 안에 눈을 보충해 주세요.`, label: '보충하러 가기', fn: () => visit(e.key) });
   }
   if (giantTotal > 0 && giantTotal < GIANT.target) items.push({ text: `이번 주 공동 눈사람이 ${Math.round(giantTotal / GIANT.target * 100)}% 쌓였어요.`, label: '보태러 가기', fn: () => visit('giant') });
   saveSeen();
@@ -8912,6 +8983,7 @@ function frame(now) {
   updateArena(Date.now());
   if (now - meltAt > 60000) { meltAt = now; scheduleReconcile(); saveSeen(); }
   updateProjs(dt);
+  meltDrips(dt);
   updateParticles(dt);
   for (let i = tweens.length - 1; i >= 0; i--) { const tw = tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) tweens.splice(i, 1); }
   updateCamera(dt);
