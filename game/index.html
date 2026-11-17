@@ -182,6 +182,66 @@ body.touch #brand .chips::-webkit-scrollbar { display: none; }
   body.touch #news { left: calc(12px + env(safe-area-inset-left)); transform: none; top: calc(var(--brand-b, 84px) + 8px); width: min(400px, 46vw); max-height: calc(100vh - var(--brand-b, 84px) - 84px); }
 }
 
+/* 휴대폰: 조작 버튼·작은 지도·제목·알림을 작게, 채팅 줄은 💬·😊 버튼으로 접어 화면을 넓게 씀 */
+#t-chat, #t-emo { display: none; }
+body.touch #t-chat, body.touch #t-emo { display: grid; }
+body.touch #joy { width: 104px; height: 104px; left: calc(16px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); }
+body.touch #joy-knob { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+body.touch #tbtns { right: calc(14px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); grid-template-columns: repeat(2, 54px); gap: 8px; }
+body.touch .tbtn { width: 54px; height: 54px; font-size: 12px; }
+body.touch .tbtn.main { width: 100%; height: 46px; border-radius: 23px; font-size: 14px; }
+body.touch .tbtn.main.none { visibility: hidden; }
+body.touch .tbtn.mini { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; font-size: 18px; position: absolute; }
+body.touch .tbtn.mini svg { width: 19px; height: 19px; }
+body.touch #t-photo { right: calc(140px + env(safe-area-inset-right)); bottom: calc(81px + env(safe-area-inset-bottom)); width: 40px; height: 40px; }
+body.touch #t-photo svg { width: 19px; height: 19px; }
+body.touch #t-emo { right: calc(140px + env(safe-area-inset-right)); bottom: calc(23px + env(safe-area-inset-bottom)); }
+body.touch #t-chat { right: calc(188px + env(safe-area-inset-right)); bottom: calc(23px + env(safe-area-inset-bottom)); }
+body.touch #chat .tbtn.mini[aria-pressed="true"], body.touch .tbtn.mini[aria-pressed="true"] { background: var(--snow); color: var(--ink); }
+body.touch #chat { left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); width: auto; bottom: calc(8px + env(safe-area-inset-bottom)); }
+body.touch #chat.open, body.touch #chat.emo { z-index: 26; }
+body.touch #t-view { position: absolute; right: 174px; bottom: 65px; width: 40px; height: 40px; font-size: 11px; padding: 0; }
+body.touch #chat .chat-row { display: none; }
+body.touch #chat.open .chat-row { display: flex; }
+body.touch #chat.emo { bottom: calc(70px + env(safe-area-inset-bottom)); justify-items: end; padding-right: 120px; }
+body.touch #chat.emo .chat-row { display: inline-flex; width: fit-content; padding: 4px; }
+body.touch #chat.emo #chat-input { display: none; }
+body.touch #chat.emo .emotes button { width: 38px; height: 38px; font-size: 20px; }
+body.touch #brand { padding: 6px 10px; gap: 5px; border-radius: 14px; }
+body.touch #brand .logo { font-size: 16px; }
+body.touch .chip { font-size: 11px; padding: 2px 7px; }
+body.touch #toolbar { gap: 5px; }
+body.touch .tb { height: 34px; padding: 0 8px; border-radius: 10px; }
+body.touch .tb svg { width: 17px; height: 17px; }
+body.touch #minimap { width: 96px; height: 96px; }
+body.touch .toast { font-size: 13px; line-height: 1.4; padding: 8px 10px 8px 12px; gap: 8px; }
+body.touch .toast .btn { height: 30px; padding: 0 10px; font-size: 12.5px; }
+body.touch #toasts { width: min(380px, calc(100vw - 24px)); gap: 6px; }
+body.touch #news h2 { font-size: 18px; }
+body.touch #news-list li { font-size: 13px; padding: 7px 9px; }
+body.touch #roombar { left: calc(12px + env(safe-area-inset-left)); transform: none; padding: 4px 5px 4px 10px; gap: 5px; border-radius: 12px; }
+body.touch #roombar b { font-size: 13px; }
+body.touch #roombar .btn { height: 30px; padding: 0 10px; font-size: 12.5px; }
+body.touch #prompt { font-size: 13px; }
+@media (orientation: portrait) {
+  body.touch #minimap { top: calc(54px + env(safe-area-inset-top)); }
+  body.touch #toasts { top: var(--toast-top, calc(160px + env(safe-area-inset-top))); }
+}
+/* 가로로 눕힌 휴대폰: 세로 공간이 좁아 더 작게 */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.touch #center-bottom { bottom: calc(14px + env(safe-area-inset-bottom)); }
+  body.touch #joy { width: 96px; height: 96px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+  body.touch #tbtns { bottom: calc(12px + env(safe-area-inset-bottom)); grid-template-columns: repeat(2, 50px); }
+  body.touch .tbtn { width: 50px; height: 50px; }
+  body.touch .tbtn.main { height: 42px; }
+  body.touch #t-photo { right: calc(132px + env(safe-area-inset-right)); bottom: calc(71px + env(safe-area-inset-bottom)); }
+  body.touch #t-emo { right: calc(132px + env(safe-area-inset-right)); bottom: calc(17px + env(safe-area-inset-bottom)); }
+  body.touch #t-chat { right: calc(180px + env(safe-area-inset-right)); bottom: calc(17px + env(safe-area-inset-bottom)); }
+  body.touch #t-view { right: 166px; bottom: 59px; }
+  body.touch #chat.emo { bottom: calc(62px + env(safe-area-inset-bottom)); }
+  body.touch #minimap { width: 88px; height: 88px; }
+}
+
 /* settings, arena, news, guestbook */
 #settings { position: absolute; top: calc(60px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: min(300px, calc(100vw - 24px)); padding: 12px; display: grid; gap: 10px; z-index: 18; }
 .set-row { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; }
@@ -463,6 +523,22 @@ body.touch #snack .sheet-head { padding-top: 8px; padding-bottom: 6px; }
 .sw-row .sw { width: 28px; height: 28px; }
 .sw-row .sw-top { border-radius: 9px; background-size: cover; background-position: center; }
 .look-actions { display: flex; gap: 10px; }
+.tabs.look-tabs { grid-template-columns: repeat(3, 1fr); margin-top: 2px; padding: 0; }
+.look-pane { display: grid; gap: 7px; align-content: start; min-height: 176px; }
+.look-pane[hidden] { display: none; }
+.look-stage { align-self: start; position: sticky; top: 0; height: min(400px, calc(100dvh - 150px)); }
+/* 가로로 눕힌 휴대폰: 제목·설명을 줄이고 미리보기는 화면 높이에 맞춤(길어진 칸 때문에 머리만 보이던 것) */
+@media (max-height: 520px) and (orientation: landscape) {
+  .modal-card.entry-card { padding: 14px 16px; gap: 8px; width: min(820px, 100%); }
+  .entry-card h1 { font-size: 26px; }
+  .entry-card .lead { display: none; }
+  .entry-card .theme-line { font-size: 12.5px; padding: 6px 10px; }
+  .entry-card .eyebrow { display: none; }
+  .look-wrap { grid-template-columns: 210px 1fr; gap: 14px; }
+  .look-stage { min-height: 0; height: calc(100dvh - 128px); max-height: 300px; }
+  .look-pane { min-height: 0; }
+  .keys.touchk { display: none !important; }
+}
 .chip.sky { background: rgba(120, 90, 220, 0.28); border-color: rgba(190, 170, 255, 0.45); color: #efe9ff; font-variant-numeric: tabular-nums; }
 .chip.sky.live { background: linear-gradient(90deg, rgba(60, 200, 150, 0.45), rgba(140, 90, 230, 0.45)); color: #fff; animation: skyglow 2.4s ease-in-out infinite; }
 @keyframes skyglow { 50% { box-shadow: 0 0 14px rgba(140, 255, 210, 0.45); } }
@@ -555,7 +631,8 @@ body.room-edit #touch, body.room-edit #chat { display: none; }
 .entry-card.edit .eyebrow, .entry-card.edit .lead, .entry-card.edit .theme-line, .entry-card.edit #entry-status, .entry-card.edit .keys { display: none; }
 @media (max-width: 640px) {
   .look-wrap { grid-template-columns: 1fr; gap: 12px; }
-  .look-stage { min-height: 210px; }
+  .look-stage { min-height: 210px; height: 230px; position: relative; }
+  .look-pane { min-height: 0; }
   .entry-card .lead { font-size: 14px; }
 }
 .sw[aria-pressed="true"], .sw[aria-checked="true"] { border-color: var(--snow); box-shadow: inset 0 0 0 3px var(--ink); }
@@ -923,6 +1000,8 @@ body.touch .keys.desk { display: none; }
         <button id="t-jump" class="tbtn" type="button">점프</button>
         <button id="t-view" class="tbtn" type="button" hidden>보기</button>
       </div>
+      <button id="t-chat" class="tbtn mini" type="button" aria-label="채팅 쓰기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
+      <button id="t-emo" class="tbtn mini" type="button" aria-label="감정 표현">😊</button>
       <button id="t-photo" class="tbtn" type="button" aria-label="사진 찍기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg></button>
     </div>
   </div>
@@ -1188,24 +1267,37 @@ body.touch .keys.desk { display: none; }
         <div class="look-form">
           <label class="lbl-sm" for="nick">닉네임</label>
           <input id="nick" class="text-in" maxlength="12" placeholder="마을에서 쓸 이름" autocomplete="off">
-          <div class="lbl-sm" id="color-label">겉옷 색</div>
-          <div id="swatches" class="sw-row" role="radiogroup" aria-labelledby="color-label"></div>
-          <div class="lbl-sm" id="top-label">겉옷 모양</div>
-          <div id="sw-top" class="sw-row" role="radiogroup" aria-labelledby="top-label"></div>
-          <div class="lbl-sm" id="hair-label">머리색</div>
-          <div id="sw-hair" class="sw-row" role="radiogroup" aria-labelledby="hair-label"></div>
-          <div class="lbl-sm" id="knit-label">털모자·장갑</div>
-          <div id="sw-knit" class="sw-row" role="radiogroup" aria-labelledby="knit-label"></div>
-          <div class="lbl-sm" id="scarf-label">목도리</div>
-          <div id="sw-scarf" class="sw-row" role="radiogroup" aria-labelledby="scarf-label"></div>
-          <div class="lbl-sm" id="pants-label">바지</div>
-          <div id="sw-pants" class="sw-row" role="radiogroup" aria-labelledby="pants-label"></div>
-          <div class="lbl-sm" id="boots-label">신발</div>
-          <div id="sw-boots" class="sw-row" role="radiogroup" aria-labelledby="boots-label"></div>
-          <div class="lbl-sm" id="prop-label">소품 <span class="lbl-note">머리 하나 · 얼굴 하나</span></div>
-          <div class="prop-rows" role="group" aria-labelledby="prop-label">
-            <div id="pr-head" class="prop-row" role="radiogroup" aria-label="머리 소품"></div>
-            <div id="pr-face" class="prop-row" role="radiogroup" aria-label="얼굴 소품"></div>
+          <div class="tabs look-tabs" role="tablist" aria-label="꾸밀 곳">
+            <button type="button" role="tab" data-lt="wear" aria-selected="true">옷</button>
+            <button type="button" role="tab" data-lt="knit" aria-selected="false">모자·장갑</button>
+            <button type="button" role="tab" data-lt="extra" aria-selected="false">머리·소품</button>
+          </div>
+          <div class="look-pane" data-lp="wear">
+            <div class="lbl-sm" id="color-label">겉옷 색</div>
+            <div id="swatches" class="sw-row" role="radiogroup" aria-labelledby="color-label"></div>
+            <div class="lbl-sm" id="top-label">겉옷 모양</div>
+            <div id="sw-top" class="sw-row" role="radiogroup" aria-labelledby="top-label"></div>
+            <div class="lbl-sm" id="pants-label">바지</div>
+            <div id="sw-pants" class="sw-row" role="radiogroup" aria-labelledby="pants-label"></div>
+            <div class="lbl-sm" id="boots-label">신발</div>
+            <div id="sw-boots" class="sw-row" role="radiogroup" aria-labelledby="boots-label"></div>
+          </div>
+          <div class="look-pane" data-lp="knit" hidden>
+            <div class="lbl-sm" id="knit-label">털모자</div>
+            <div id="sw-knit" class="sw-row" role="radiogroup" aria-labelledby="knit-label"></div>
+            <div class="lbl-sm" id="mit-label">장갑</div>
+            <div id="sw-mit" class="sw-row" role="radiogroup" aria-labelledby="mit-label"></div>
+            <div class="lbl-sm" id="scarf-label">목도리</div>
+            <div id="sw-scarf" class="sw-row" role="radiogroup" aria-labelledby="scarf-label"></div>
+          </div>
+          <div class="look-pane" data-lp="extra" hidden>
+            <div class="lbl-sm" id="hair-label">머리색</div>
+            <div id="sw-hair" class="sw-row" role="radiogroup" aria-labelledby="hair-label"></div>
+            <div class="lbl-sm" id="prop-label">소품 <span class="lbl-note">머리 하나 · 얼굴 하나</span></div>
+            <div class="prop-rows" role="group" aria-labelledby="prop-label">
+              <div id="pr-head" class="prop-row" role="radiogroup" aria-label="머리 소품"></div>
+              <div id="pr-face" class="prop-row" role="radiogroup" aria-label="얼굴 소품"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1986,9 +2078,36 @@ const AMAT_DEF = {
 };
 // 얼굴: 눈 뜬 칸과 감은 칸을 같은 그림에서 오프셋만 바꿔 씀
 const FACE_TEX = [null, null];
+// 표정 0 기본 · 1 눈웃음 · 2 입 벌림(달리기) · 3 활짝(눈웃음 + 벌린 입) · 4 ><(맞았을 때). 얼굴 그림(왼쪽 절반이 얼굴)을 바탕으로 입·눈만 고쳐 그림
+const FACE_X = [];
+const FACE_HAPPY = { wave: 3, cheer: 3, dance: 3, cheers: 3, heart: 1, wish: 1 };
+function buildFaces(img, prep) {
+  const W = img.width, H = img.height, hw = W / 2, s = hw / 512;
+  const skin = (() => { const c = makeCanvas(4, 4), g = c.getContext('2d'); g.drawImage(img, 40 * s, 60 * s, 4, 4, 0, 0, 4, 4); const d = g.getImageData(1, 1, 1, 1).data; return `rgb(${d[0]},${d[1]},${d[2]})`; })();
+  const make = (eyesRight, mouth, eyes) => {
+    const cv = makeCanvas(W, H), g = cv.getContext('2d');
+    g.drawImage(img, eyesRight ? hw : 0, 0, hw, H, 0, 0, hw, H);
+    g.save(); g.scale(s, s); g.lineCap = 'round'; g.lineJoin = 'round';
+    if (mouth) {
+      g.fillStyle = skin; g.beginPath(); g.ellipse(256, 332, 30, 15, 0, 0, TAU); g.fill();
+      g.fillStyle = '#7b3a36';
+      if (mouth === 'o') { g.beginPath(); g.ellipse(256, 336, 12, 11, 0, 0, TAU); g.fill(); g.fillStyle = '#e8828a'; g.beginPath(); g.ellipse(256, 341, 7, 5, 0, 0, TAU); g.fill(); }
+      else { g.beginPath(); g.moveTo(236, 325); g.quadraticCurveTo(256, 364, 276, 325); g.closePath(); g.fill(); g.fillStyle = '#e8828a'; g.beginPath(); g.ellipse(256, 343, 9, 5, 0, 0, TAU); g.fill(); }
+    }
+    if (eyes === 'x') {
+      g.fillStyle = skin; for (const cx of [166, 346]) { g.beginPath(); g.ellipse(cx, 250, 44, 62, 0, 0, TAU); g.fill(); }
+      g.strokeStyle = '#4a2e2a'; g.lineWidth = 11;
+      g.beginPath(); g.moveTo(140, 224); g.lineTo(190, 250); g.lineTo(140, 276); g.stroke();
+      g.beginPath(); g.moveTo(372, 224); g.lineTo(322, 250); g.lineTo(372, 276); g.stroke();
+    }
+    g.restore();
+    const t = new THREE.CanvasTexture(cv); prep(t); t.needsUpdate = true; return t;
+  };
+  FACE_X[2] = make(false, 'o'); FACE_X[3] = make(true, 'd'); FACE_X[4] = make(false, 'o', 'x');
+}
 if (ASSETS) {
   const prep = t => { t.flipY = false; t.anisotropy = 4; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.colorSpace = THREE.SRGBColorSpace; };
-  FACE_TEX[0] = TEXL.load('./assets/tex/face.png', t => { const b = t.clone(); prep(b); b.offset.x = 0.5; b.needsUpdate = true; FACE_TEX[1] = b; }, undefined, () => texFallback(FACE_TEX[0], '#ffe1cb'));
+  FACE_TEX[0] = TEXL.load('./assets/tex/face.png', t => { const b = t.clone(); prep(b); b.offset.x = 0.5; b.needsUpdate = true; FACE_TEX[1] = b; try { buildFaces(t.image, prep); } catch (e) { console.warn('표정을 만들지 못했어요', e); } }, undefined, () => texFallback(FACE_TEX[0], '#ffe1cb'));
   prep(FACE_TEX[0]);
 }
 const AMATS = new Map();
@@ -3145,24 +3264,27 @@ function topPreview(t, ci) {
 }
 // 머리색(h)·털모자와 장갑(k)·목도리(s)·겉옷 모양(t)·바지(p)·신발(b). 저장값이 없으면 패딩 색에서 정함(예전 버전과 같은 모습)
 function lookFor(c, l) {
-  const d = { h: c % HAIR.length, k: c % KNIT.length, s: (c + 3) % KNIT.length, t: 0, p: 0, b: 0 };
+  const d = { h: c % HAIR.length, k: c % KNIT.length, s: (c + 3) % KNIT.length, t: 0, p: 0, b: 0 }; d.m = d.k;
   if (!l || typeof l !== 'object') return d;
   const pick = (v, n, def) => isNum(v) ? clamp(Math.round(v), 0, n - 1) : def;
-  return { h: pick(l.h, HAIR.length, d.h), k: pick(l.k, KNIT.length, d.k), s: pick(l.s, KNIT.length, d.s), t: pick(l.t, TOPS.length, 0), p: pick(l.p, PANTS.length, 0), b: pick(l.b, BOOTS.length, 0) };
+  const k = pick(l.k, KNIT.length, d.k);
+  // 장갑(m)은 따로 고를 수 있음. 예전 저장값엔 없으니 털모자 색을 따름
+  return { h: pick(l.h, HAIR.length, d.h), k, s: pick(l.s, KNIT.length, d.s), t: pick(l.t, TOPS.length, 0), p: pick(l.p, PANTS.length, 0), b: pick(l.b, BOOTS.length, 0), m: pick(l.m, KNIT.length, k) };
 }
 // 처음 온 사람·주사위: 겉옷 모양까지 골고루(패딩이 조금 더 자주)
 function randomLook() {
   const R = n => Math.floor(Math.random() * n), k = R(KNIT.length);
   let s = R(KNIT.length); if (s === k) s = (s + 1 + R(KNIT.length - 1)) % KNIT.length;
-  return { h: R(HAIR.length), k, s, t: Math.random() < 0.28 ? 0 : 1 + R(TOPS.length - 1), p: R(PANTS.length), b: R(BOOTS.length) };
+  return { h: R(HAIR.length), k, s, t: Math.random() < 0.28 ? 0 : 1 + R(TOPS.length - 1), p: R(PANTS.length), b: R(BOOTS.length), m: Math.random() < 0.5 ? k : R(KNIT.length) };
 }
-const lookSig = (c, l) => `${c}:${l.h}:${l.k}:${l.s}:${l.t}:${l.p}:${l.b}`;
+const lookSig = (c, l) => `${c}:${l.h}:${l.k}:${l.s}:${l.t}:${l.p}:${l.b}:${l.m}`;
 function makeAvatar(ci, lk) {
   lk = lk || lookFor(ci);
-  if (lk.t == null) lk = lookFor(ci, lk);
+  if (lk.t == null || lk.m == null) lk = lookFor(ci, lk);
   if (ASSETS) {
     const face = toonMat({ map: FACE_TEX[0], vertexColors: true }), coat = topMat(lk.t, ci);
     const av = useAsset('avatar', { tints: { coat: COLORS[ci] || COLORS[0], hair: HAIR[lk.h], knit: KNIT[lk.k], scarf: KNIT[lk.s], pants: PANTS[lk.p], boot: BOOTS[lk.b] }, perClone: coat ? { face, coat } : { face } });
+    if (lk.m !== lk.k) { const mm = assetMat({ name: 'knit' }, KNIT[lk.m]); for (const sd of ['L', 'R']) { const mt = av.getObjectByName('mitten_' + sd); if (mt) mt.traverse(c => { if (c.isMesh) c.material = mm; }); } }
     const root = new THREE.Group(); root.add(av);
     const N = n => av.getObjectByName(n);
     root.userData = { rig: N('rig'), head: N('head'), faceMat: face, armL: N('armL'), armR: N('armR'), legL: N('legL'), legR: N('legR'), blinkAt: clock + 1 + Math.random() * 3, blinkT: 0 };
@@ -3198,7 +3320,7 @@ function makeAvatar(ci, lk) {
   const arms = [], legs = [];
   for (const sx of [1, -1]) {
     const a = new THREE.Group(); a.position.set(sx * 0.3, 0.86, 0); rig.add(a);
-    put(a, mesh(AV.arm, jacket)).castShadow = true; put(a, mesh(GEO.sphereLo, knit, 0, -0.34, 0, 0.095)); arms.push(a);
+    put(a, mesh(AV.arm, jacket)).castShadow = true; put(a, mesh(GEO.sphereLo, mat(KNIT[lk.m]), 0, -0.34, 0, 0.095)); arms.push(a);
     const l = new THREE.Group(); l.position.set(sx * 0.12, 0.38, 0); rig.add(l);
     put(l, mesh(AV.leg, mat(PANTS[lk.p]))).castShadow = true; put(l, mesh(GEO.sphere, mat(BOOTS[lk.b]), 0, -0.29, 0.035, 0.12, 0.085, 0.16)); legs.push(l);
   }
@@ -4598,9 +4720,9 @@ function armHang(o, sd, swing = 0, out = 0, bend = 0, w = 1) {
   armTo(o, sd, ARM_HANG[0] + swing, ARM_HANG[1] + out, lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), w);
 }
 const GAIT_V = [0.8, 3, 5, 8.2, 10];
-const GAIT_T = [0.62, 0.5, 0.44, 0.36, 0.33];       // 한 주기(왼발→왼발) 초: 종종걸음
+const GAIT_T = [0.6, 0.47, 0.41, 0.34, 0.31];       // 한 주기(왼발→왼발) 초: 종종걸음
 const GAIT_B = [0.6, 0.55, 0.52, 0.38, 0.36];       // 한 발이 땅에 닿아 있는 비율(달리기는 두 발 다 뜨는 때가 있음)
-const GAIT_S = [0.1, 0.2, 0.25, 0.36, 0.38];        // 보폭: 짧게
+const GAIT_S = [0.1, 0.22, 0.28, 0.38, 0.4];        // 보폭: 짧게
 const GAIT_LIFT = [0.06, 0.1, 0.125, 0.15, 0.16];   // 무릎을 올려 발을 콩콩
 const GAIT_BOB = [0.014, 0.032, 0.042, 0.056, 0.06];
 const GAIT_CROUCH = [0.006, 0.01, 0.012, 0.028, 0.032];
@@ -4782,18 +4904,18 @@ function addBrake(o, u, k) {
   o.tx -= 0.24 * e; o.by -= 0.05 * e; o.sq -= 0.03 * e;
   const fl = u.brakeL ? 'l' : 'r', bk = u.brakeL ? 'r' : 'l';
   footTo(o, fl, 0.2 * e + 0.01, 0); footTo(o, bk, -0.08 * e + 0.01, 0);
-  armTo(o, 'L', -0.8, 0.6, -0.3, 0, 0, e); armTo(o, 'R', -0.8, 0.6, -0.3, 0, 0, e);
+  armHang(o, 'L', -1.54, -0.26, 0.31, e); armHang(o, 'R', -1.54, -0.26, 0.31, e);   // 팔을 앞으로 뻗어 버팀(내린 팔 기준이라 넘어갈 때 소매가 꼬이지 않음)
   o.hx += 0.08 * e;
 }
 // 오래 서 있으면 가끔: 손에 입김 불기, 추워서 발 동동
 function addIdleAct(o, u, k, x, t) {
   const e = ease(x / 0.3) * ease((2.4 - x) / 0.35);
   if (k === 'blow') {
-    armTo(o, 'L', -0.71, 0.18, -0.75, 0.28, -0.44, e); armTo(o, 'R', -0.71, 0.18, -0.75, 0.28, -0.44, e);
+    armHang(o, 'L', -1.47, -1.2, 0.71, e); armHang(o, 'R', -1.47, -1.2, 0.71, e);
     o.hx += 0.1 * e; o.tx += 0.04 * e;
   } else {
     const st = Math.sin(t * 13);
-    armTo(o, 'L', -0.55, -0.12, -1.25, 0, 0, e); armTo(o, 'R', -0.55, -0.12, -1.25, 0, 0, e);
+    armHang(o, 'L', -1.56, -1.2, 0.6, e); armHang(o, 'R', -1.56, -1.2, 0.6, e);
     o.tz += 0.025 * Math.sin(t * 41) * e; o.by += -0.012 * e;
     footTo(o, 'l', 0.01, 0.06 * Math.max(0, st) * e); footTo(o, 'r', 0.01, 0.06 * Math.max(0, -st) * e);
   }
@@ -4905,6 +5027,33 @@ function animateAvatar(av, st, dt, emote, throwT, spd = null) {
   const turn = u.lastRy == null ? 0 : Math.atan2(Math.sin(av.rotation.y - u.lastRy), Math.cos(av.rotation.y - u.lastRy)) / Math.max(dt, 1e-3);
   u.lastRy = av.rotation.y;
   u.turnRoll = r(u.turnRoll || 0, clamp(-turn * 0.035, -0.12, 0.12) * (0.4 + W.g), 8);
+  // 제자리에서 방향을 바꾸면 발을 콩콩 옮기며 돎
+  u.turnW = r(u.turnW || 0, st === 'idle' && !emote && Math.abs(turn) > 1.4 ? 1 : 0, Math.abs(turn) > 1.4 ? 14 : 6);
+  if (u.turnW > 0.02) { poseGait(tmp, u, 1.6, dt, ''); mixPose(o, tmp, u.turnW * 0.8); }
+  // 점프: 뛰어오를 때 쭉 늘어나고, 내려앉으면 꾹 눌렸다 폄
+  if (st === 'air') { u.airT = (u.airT || 0) + dt; o.sq += 0.07 * Math.max(0, 1 - u.airT / 0.22); }
+  else if (prevSt === 'air') { u.landT = 0.3; u.landS = clamp((u.airT || 0) / 0.55, 0.45, 1); u.airT = 0; }
+  if (u.landT > 0) {
+    u.landT -= dt;
+    const k = Math.sin(Math.PI * clamp(1 - u.landT / 0.3, 0, 1)) * u.landS;
+    o.sq -= 0.08 * k; o.tx += 0.06 * k; o.hx += 0.06 * k; o.aLz += 0.28 * k; o.aRz -= 0.28 * k;
+    if (st === 'idle') { o.by -= 0.06 * k; feetOnGround(o, 0.02, 0, 0.02, 0); }
+  }
+  // 눈뭉치에 맞으면 움찔(표정은 ><)
+  if (u.ouchT > 0) {
+    u.ouchT -= dt;
+    const k = Math.sin(Math.PI * clamp(1 - u.ouchT / 0.9, 0, 1)) * Math.min(1, u.ouchT * 4 + 0.3);
+    o.tx -= 0.16 * k; o.hx -= 0.14 * k; o.sq -= 0.04 * k; o.tz += 0.05 * k * Math.sin(t * 30);
+    armHang(o, 'L', -0.7, 0.35, 0.9, 0.7 * k); armHang(o, 'R', -0.7, 0.35, 0.9, 0.7 * k);
+  }
+  // 걸음마다 발밑에 눈가루(가까이 있는 사람만)
+  if (u.contactN !== u.cnSeen) {
+    u.cnSeen = u.contactN;
+    if ((st === 'walk' || st === 'run') && av.parent === scene && !offMap(av.position.x, av.position.z) && (av.position.x - camera.position.x) ** 2 + (av.position.z - camera.position.z) ** 2 < 676) {
+      const sx = ((u.gph || 0) < 0.5 ? 0.2 : -0.2), f = st === 'run' ? 0.18 : 0.13;
+      burst(av.position.x + ryS * f + ryC * sx, av.position.y + 0.04, av.position.z + ryC * f - ryS * sx, st === 'run' ? 4 : 2, ['#ffffff', '#e6eef8'], st === 'run' ? 1.1 : 0.7, st === 'run' ? 1.2 : 0.8, 0.035, 0.38);
+    }
+  }
   // 2차 움직임: 모자 방울과 목도리 끝이 몸을 한 박자 늦게 따라감
   if (u.pom || u.tail) {
     const byv = (o.by - (u.pby ?? o.by)) * idt, ay = clamp((byv - (u.pbyv || 0)) * idt, -80, 80); u.pby = o.by; u.pbyv = byv;
@@ -4916,7 +5065,10 @@ function animateAvatar(av, st, dt, emote, throwT, spd = null) {
     }
     if (u.tail) {
       const A = u.tailA || (u.tailA = { x: 0, v: 0 }), B = u.tailB || (u.tailB = { x: 0, v: 0 });
-      sp(A, u.af * 1.8 - ay * 0.5, 95, 6, -0.75, 0.1); sp(B, -u.as * 1.8, 95, 6, -0.5, 0.5);
+      // 걷거나 달리면 바람에 뒤로 날리며 팔랑팔랑
+      const sv = Math.min(hs, 9), fl = Math.min(1, sv / 5);
+      sp(A, u.af * 1.8 - ay * 0.5 - sv * 4.2 + Math.sin(t * 17 + u.seed) * 22 * fl, 95, 6, -0.75, 0.1);
+      sp(B, -u.as * 1.8 + Math.sin(t * 11.5 + u.seed * 2) * 16 * fl, 95, 6, -0.5, 0.5);
       u.tail.rotation.set(A.x, 0, B.x);
     }
   }
@@ -4941,7 +5093,15 @@ function animateAvatar(av, st, dt, emote, throwT, spd = null) {
   if (u.eyes || u.faceMat) {
     if (clock > u.blinkAt) { u.blinkT = 0.14; u.blinkAt = clock + 2.2 + Math.random() * 3.5; }
     if (u.blinkT > 0) u.blinkT -= dt;
-    if (u.faceMat) { const want = u.blinkT > 0 && FACE_TEX[1] ? FACE_TEX[1] : FACE_TEX[0]; if (u.faceMat.map !== want) u.faceMat.map = want; }
+    if (u.faceMat) {
+      // 표정: 맞으면 ><, 신나는 감정 표현은 활짝, 하트·소원은 눈웃음, 달리면 입을 벌림
+      let ex = u.blinkT > 0 ? 1 : 0;
+      if (u.ouchT > 0) ex = 4;
+      else if (emote && FACE_HAPPY[emote.k] != null) ex = FACE_HAPPY[emote.k];
+      else if (st === 'run' && W.g > 0.5) ex = u.blinkT > 0 ? 1 : 2;
+      const want = FACE_X[ex] || (ex === 1 || ex === 3 ? FACE_TEX[1] : null) || FACE_TEX[0];
+      if (u.faceMat.map !== want && want) u.faceMat.map = want;
+    }
     else { const sy = u.blinkT > 0 ? 0.15 : 1; for (const e of u.eyes) e.scale.y = sy; }
     if (u.head) {
       u.head.rotation.z = Math.sin(t * 1.3) * 0.03 - u.rig.rotation.z * 0.5 + o.hz;
@@ -5566,7 +5726,7 @@ function upsertPeer(p) {
   const c = clamp(Math.round(isNum(pr.c) ? pr.c : 0), 0, COLORS.length - 1);
   const hasPos = Array.isArray(pr.p) && pr.p.length === 3 && pr.p.every(isNum);
   if (hasPos) {
-    const plk = Array.isArray(pr.lk) ? lookFor(c, { h: pr.lk[0], k: pr.lk[1], s: pr.lk[2], t: pr.lk[3], p: pr.lk[4], b: pr.lk[5] }) : lookFor(c), lsig = lookSig(c, plk);
+    const plk = Array.isArray(pr.lk) ? lookFor(c, { h: pr.lk[0], k: pr.lk[1], s: pr.lk[2], t: pr.lk[3], p: pr.lk[4], b: pr.lk[5], m: pr.lk[6] }) : lookFor(c), lsig = lookSig(c, plk);
     if (!pe.avatar || pe.lookSig !== lsig) {
       const old = pe.avatar; pe.avatar = makeAvatar(c, plk); pe.colorIdx = c; pe.lookSig = lsig; scene.add(pe.avatar);
       if (old) { pe.avatar.position.copy(old.position); pe.avatar.rotation.y = old.rotation.y; scene.remove(old); }
@@ -6893,7 +7053,7 @@ function projHit(pr, pos) {
   for (const pe of peers.values()) {
     if (!pe.avatar || pe.peer === pr.owner) continue;
     const dx = pos.x - pe.pos.x, dz = pos.z - pe.pos.z, dy = pos.y - pe.pos.y;
-    if (dx * dx + dz * dz < 0.3 && dy > 0.1 && dy < 2.1) return true;
+    if (dx * dx + dz * dz < 0.3 && dy > 0.1 && dy < 2.1) { pe.avatar.userData.ouchT = 0.9; return true; }
   }
   return false;
 }
@@ -6913,6 +7073,7 @@ function onHitMe(owner, v) {
   myHit = arenaHit ? { n: ++counters.ht, by: owner, ep: arenaState.ep } : { n: ++counters.ht, by: owner };
   if (arenaHit) ARN.stunUntil = clock + 1.2;
   if (P.sled) stopSled();
+  if (me) me.userData.ouchT = 0.9;
   sfx('splat');
   const sp = $('#splat'); sp.classList.add('hit'); setTimeout(() => sp.classList.remove('hit'), 60);
   P.vel.x += v.x * 0.15; P.vel.z += v.z * 0.15;
@@ -7497,7 +7658,7 @@ function publishPresence(now) {
   if (!NET.room || !entered || now - presAt < (peers.size ? 100 : 1000)) return;
   presAt = now;
   const pr = {
-    v: 1, nk: nick, c: colorIdx, lk: [look.h, look.k, look.s, look.t, look.p, look.b], pp: [props.h, props.f], uid: NET.uid,
+    v: 1, nk: nick, c: colorIdx, lk: [look.h, look.k, look.s, look.t, look.p, look.b, look.m], pp: [props.h, props.f], uid: NET.uid,
     p: [r2(P.pos.x), r2(P.pos.y), r2(P.pos.z)], ry: r2(((P.ry % TAU) + TAU) % TAU), st: P.anim,
     bl: rolling ? r3(rolling.r) : 0,
     wip: wip ? { x: wip.x, z: wip.z, ry: r2(wip.ry), b: wip.b, d: wip.d, nm: wip.nm || '' } : null,
@@ -7539,14 +7700,23 @@ function ctrlYaw(moving, dt) {
 }
 // 카메라와 나 사이에 오두막이 끼면 카메라를 앞으로 당김(지붕 속에 들어가 화면이 가리지 않게). 당길 땐 바로, 풀 땐 천천히
 const camSeg = new THREE.Vector3();
+// 카메라를 가리는 큰 것들(돌아간 상자로 어림): 오두막 셋, 광장 트리, 사진관 팻말
+let CAM_OCC = null;
+function camOccluders() {
+  if (CAM_OCC) return CAM_OCC;
+  CAM_OCC = CABINS.map(c => ({ x: c.x, z: c.z, rot: c.rot, gy: groundY(c.x, c.z), lo: [-3.75, -1, -3.45], hi: [3.75, 5.9, 3.45] }));
+  CAM_OCC.push({ x: 0, z: 0, rot: 0, gy: groundY(0, 0), lo: [-2.9, 1.2, -2.9], hi: [2.9, 10.5, 2.9] });
+  const c = CABINS[STUDIO_CABIN], SX = 2.15, SZ = 7.75, wx = c.x + SX * Math.cos(c.rot) + SZ * Math.sin(c.rot), wz = c.z - SX * Math.sin(c.rot) + SZ * Math.cos(c.rot);
+  CAM_OCC.push({ x: wx, z: wz, rot: c.rot, gy: groundY(wx, wz), lo: [-0.8, -0.2, -0.12], hi: [0.8, 1.65, 0.12] });
+  return CAM_OCC;
+}
 function cabinOcclusion(tx, ty, tz, cx, cy, cz) {
   let best = 1;
-  for (const c of CABINS) {
-    if (c.gy == null) c.gy = groundY(c.x, c.z);
+  for (const c of camOccluders()) {
     const sn = Math.sin(c.rot), cs = Math.cos(c.rot);
     const ax = cs * (tx - c.x) - sn * (tz - c.z), az = sn * (tx - c.x) + cs * (tz - c.z);
     const bx = cs * (cx - c.x) - sn * (cz - c.z), bz = sn * (cx - c.x) + cs * (cz - c.z);
-    const A = [ax, ty - c.gy, az], D = [bx - ax, cy - ty, bz - az], LO = [-3.75, -1, -3.45], HI = [3.75, 5.9, 3.45];
+    const A = [ax, ty - c.gy, az], D = [bx - ax, cy - ty, bz - az], LO = c.lo, HI = c.hi;
     let t0 = 0, t1 = 1, ok = true;
     for (let k = 0; k < 3 && ok; k++) {
       if (Math.abs(D[k]) < 1e-6) { if (A[k] < LO[k] || A[k] > HI[k]) ok = false; continue; }
@@ -7610,6 +7780,9 @@ function updateCamera(dt) {
     const hx = STUDIO.W / 2 - 0.45, hz = STUDIO.D / 2 - 0.45;
     camera.position.x = clamp(camera.position.x, STUDIO.x - hx, STUDIO.x + hx);
     camera.position.z = clamp(camera.position.z, STUDIO.z - hz, STUDIO.z + hz);
+    // 벽에 막혀 카메라가 머리 뒤에 바짝 붙으면, 그만큼 위로 올려 내려다보게(머리가 화면을 가리지 않게)
+    const hd = Math.hypot(camera.position.x - CAM.target.x, camera.position.z - CAM.target.z);
+    if (mode === 'play') camera.position.y = Math.max(camera.position.y, CAM.target.y + Math.sqrt(Math.max(0, dist * dist - hd * hd)) * 0.65);
     camera.position.y = clamp(camera.position.y, 0.5, STUDIO.H - 0.45);
   }
   if (ROOMST.owner) roomCutaway();
@@ -8377,6 +8550,20 @@ const endJoy = e => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x =
 jEl.addEventListener('pointerup', endJoy); jEl.addEventListener('pointercancel', endJoy);
 const tap = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); fn(); });
 tap('#t-act', () => { if (mode === 'decorate') closeDeco(); else doPrimary(); });
+// 휴대폰 채팅·감정 표현: 평소엔 접어 두고 버튼으로 엶
+function chatPanel(k) {
+  const c = $('#chat'), was = c.classList.contains(k);
+  c.classList.remove('open', 'emo');
+  if (k && !was) c.classList.add(k);
+  $('#t-chat').setAttribute('aria-pressed', String(c.classList.contains('open')));
+  $('#t-emo').setAttribute('aria-pressed', String(c.classList.contains('emo')));
+  if (c.classList.contains('open')) setTimeout(() => $('#chat-input').focus(), 0);
+}
+tap('#t-chat', () => chatPanel('open'));
+tap('#t-emo', () => chatPanel('emo'));
+$('#chat-input').addEventListener('blur', () => { if (document.body.classList.contains('touch')) setTimeout(() => { if (document.activeElement !== $('#chat-input') && $('#chat').classList.contains('open')) chatPanel(null); }, 150); });
+$$('#chat [data-emote], #emo-pet').forEach(b => b.addEventListener('click', () => { if ($('#chat').classList.contains('emo')) chatPanel(null); }));
+renderer.domElement.addEventListener('pointerdown', () => { if ($('#chat').classList.contains('emo')) chatPanel(null); });
 tap('#t-throw', throwBall);
 tap('#t-jump', jump);
 tap('#t-view', () => { const s = nearestSnowman(4); if (s) openCard(s.key); });
@@ -8396,7 +8583,15 @@ const LOOK_ROWS = [
   { box: '#sw-top', cols: TOPS.map(() => ''), names: TOPS, get: () => look.t, set: i => { look.t = i; }, cls: 'sw sw-top' },
   { box: '#sw-pants', cols: PANTS, names: PANTS_NAMES, get: () => look.p, set: i => { look.p = i; } },
   { box: '#sw-boots', cols: BOOTS, names: BOOT_NAMES, get: () => look.b, set: i => { look.b = i; } },
+  { box: '#sw-mit', cols: KNIT, names: KNIT_NAMES, get: () => look.m, set: i => { look.m = i; } },
 ];
+// 꾸밀 곳 탭(옷 / 모자·장갑 / 머리·소품)
+$('.look-tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-lt]'); if (!b) return;
+  for (const x of $$('.look-tabs [data-lt]')) x.setAttribute('aria-selected', String(x === b));
+  for (const pn of $$('.look-pane')) pn.hidden = pn.dataset.lp !== b.dataset.lt;
+  sfx('pop');
+});
 function syncSwatches() {
   for (const r of LOOK_ROWS) [...$(r.box).children].forEach((b, i) => b.setAttribute('aria-checked', String(i === r.get())));
   // 겉옷 모양 칸은 지금 고른 겉옷 색으로 그림
@@ -8638,7 +8833,7 @@ function updateHud(now) {
   if (!(entered && mode === 'play')) promptWarn = false;
   if (html !== lastPrompt) { lastPrompt = html; $('#prompt').innerHTML = html; }
   $('#prompt').classList.toggle('warn', promptWarn);
-  const ta = $('#t-act'); if (ta.textContent !== actLabel) ta.textContent = actLabel;
+  const ta = $('#t-act'); if (ta.textContent !== actLabel) { ta.textContent = actLabel; ta.classList.toggle('none', actLabel === '—'); }
   const meter = $('#meter');
   if (rolling && mode === 'play') {
     meter.hidden = false;
